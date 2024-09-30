@@ -1,0 +1,68 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="secp256k1 curve implementation."><title>crrl::secp256k1 - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="crrl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.1 (3f5fd8dd4 2024-08-06)" data-channel="1.80.1" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../crrl/index.html">crrl</a><span class="version">0.9.0</span></h2></div><h2 class="location"><a href="#">Module secp256k1</a></h2><div class="sidebar-elems"><section><ul class="block"><li><a href="#structs">Structs</a></li><li><a href="#types">Type Aliases</a></li></ul></section><h2><a href="../index.html">In crate crrl</a></h2></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Module <a href="../index.html">crrl</a>::<wbr><a class="mod" href="#">secp256k1</a><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><span class="out-of-band"><a class="src" href="../../src/crrl/secp256k1.rs.html#1-2733">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>secp256k1 curve implementation.</p>
+<p>This module implements generic group operations on the secp256k1
+elliptic curve, a short Weierstraß curve with equation <code>y^2 = x^3 + 7</code>.
+This curve is standardized in SEC 2.</p>
+<p>The curve has prime order. “Scalars” are integers modulo that prime
+order, and are implemented by the <code>Scalar</code> structure. This structure
+supports the usual arithmetic operators (<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, and the
+compound assignments <code>+=</code>, <code>-=</code>, <code>*=</code> and <code>/=</code>).</p>
+<p>A point on the curve is represented by the <code>Point</code> structure. The
+additive arithmetic operators can be applied on <code>Point</code> instances
+(<code>+</code>, <code>-</code>, <code>+=</code>, <code>-=</code>); multiplications by an integer (<code>u64</code> type) or
+by a scalar (<code>Scalar</code> type) are also supported with the <code>*</code> and <code>*=</code>
+operators. Point doublings can be performed with the <code>double()</code>
+function (which is somewhat faster than general addition), and
+additional optimizations are obtained in the context of multiple
+successive doublings by calling the <code>xdouble()</code> function. All these
+operations are implemented with fully constant-time code and are
+complete, i.e. they work with all points, even when adding a point
+with itself or when operations involve the curve point-at-infinity
+(the neutral element for the curve as a group).</p>
+<p>Scalars can be encoded over 32 bytes, using unsigned
+<strong>little-endian</strong> convention) and decoded back. Encoding is always
+canonical, and decoding always verifies that the value is indeed in
+the canonical range. Take care that many standards related to
+secp256k1 tend to use big-endian for encoding scalars (and often use
+a variable-length encoding, e.g. an ASN.1 <code>INTEGER</code>).</p>
+<p>Points can be encoded in compressed (33 bytes) or uncompressed (65
+bytes) formats. These formats internally use big-endian. The nominal
+encoding of the point-at-infinity is a single byte of value 0x00; the
+<code>encode_compressed()</code> and <code>encode_uncompressed()</code> functions cannot
+produce that specific encoding (since they produce fixed-length
+outputs), and instead yield a sequence of 33 or 65 zeros in that
+case. Point decoding accepts compressed and uncompressed formats, and
+also the one-byte encoding of the point-at-infinity, but they do not
+accept a sequence of 33 or 65 zeros as a valid input. Thus, point
+decoding is stricly standards-conforming. All decoding operations
+enforce canonicality of encoding, and verify that the point is indeed
+on the curve.</p>
+<p>The <code>PrivateKey</code> structure represents a private key for the ECDSA
+signature algorithm; it is basically a wrapper around a private
+scalar value. The <code>PrivateKey::encode()</code> and <code>PrivateKey::decode()</code>
+functions encode a private key to exactly 32 bytes, and decode it
+back, this time using unsigned big-endian, as per SEC 1 encoding
+rules (which represents private keys with the ASN.1 <code>OCTET STRING</code>
+type). The <code>PrivateKey::from_seed()</code> allows generating a private key
+from a source seed, which is presumed to have been obtained
+from a cryptographically secure random source.</p>
+<p>The <code>PublicKey</code> structure represents a public key for the ECDSA
+signature algorithm; it is a wrapper around a <code>Point</code>. It has its own
+<code>decode()</code>, <code>encode_compressed()</code> and <code>encode_uncompressed()</code> which
+only wrap around the corresponding <code>Point</code> functions, except that
+<code>decode()</code> explicitly rejects the point-at-infinity: an ECDSA public
+key is never the identity point.</p>
+<p>ECDSA signatures are generated with <code>PrivateKey::sign_hash()</code>, and
+verified with <code>PublicKey::verify_hash()</code>. The signature process is
+deterministic, using the SHA-256 function, following the description
+in <a href="https://datatracker.ietf.org/doc/html/rfc6979">RFC 6979</a>. The caller is provides the pre-hashed message
+(normally, this hashing uses SHA-256, but the functions accept hash
+values of any length). In this implementation, the ECDSA signatures
+follow the non-ASN.1 format: the two <code>r</code> and <code>s</code> halves of the
+signature are encoded in unsigned big-endian format and concatenated,
+in that order. When generating a signature, exactly 32 bytes are used
+for each of <code>r</code> and <code>s</code>, so the signature has length 64 bytes
+exactly. When verifying a signature, any input size is accepted
+provided that it is even (so that it is unambiguous where <code>r</code> stops
+and <code>s</code> starts), and that the two <code>r</code> and <code>s</code> values are still in the
+proper range (i.e. lower than the curve order).</p>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="struct" href="struct.Point.html" title="struct crrl::secp256k1::Point">Point</a></div><div class="desc docblock-short">A point on the short Weierstraß curve secp256k1.</div></li><li><div class="item-name"><a class="struct" href="struct.PrivateKey.html" title="struct crrl::secp256k1::PrivateKey">PrivateKey</a></div><div class="desc docblock-short">A secp256k1 private key simply wraps around a scalar.</div></li><li><div class="item-name"><a class="struct" href="struct.PublicKey.html" title="struct crrl::secp256k1::PublicKey">PublicKey</a></div><div class="desc docblock-short">A secp256k1 public key simply wraps around a curve point.</div></li></ul><h2 id="types" class="section-header">Type Aliases<a href="#types" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="type" href="type.Scalar.html" title="type crrl::secp256k1::Scalar">Scalar</a></div><div class="desc docblock-short">Integers modulo the curve order n (a 256-bit prime).</div></li></ul></section></div></main></body></html>

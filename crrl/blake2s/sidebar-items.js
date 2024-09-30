@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["Blake2s","Blake2s256","KeyedBlake2s"]};

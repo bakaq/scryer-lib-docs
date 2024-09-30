@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["dbig","fbig","ibig","rbig","static_dbig","static_fbig","static_ibig","static_rbig","static_ubig","ubig"],"mod":["base","float","integer","rational"],"type":["Decimal","Integer","Natural","Rational","Real"]};

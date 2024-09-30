@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":["CubicRoot","EstimatedLog2","Inverse","SquareRoot"]};

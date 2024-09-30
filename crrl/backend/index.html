@@ -1,0 +1,194 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Architecture-specific implementations of finite fields."><title>crrl::backend - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="crrl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.1 (3f5fd8dd4 2024-08-06)" data-channel="1.80.1" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../crrl/index.html">crrl</a><span class="version">0.9.0</span></h2></div><h2 class="location"><a href="#">Module backend</a></h2><div class="sidebar-elems"><section><ul class="block"><li><a href="#reexports">Re-exports</a></li><li><a href="#modules">Modules</a></li></ul></section><h2><a href="../index.html">In crate crrl</a></h2></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Module <a href="../index.html">crrl</a>::<wbr><a class="mod" href="#">backend</a><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><span class="out-of-band"><a class="src" href="../../src/crrl/backend/mod.rs.html#1-516">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Architecture-specific implementations of finite fields.</p>
+<p>This module provides type aliases for the structures that implement
+some finite fields. Each structure is specialized for a single field
+(possibly through some type parameters, known at compile-time). There
+can be several actual implementations for each type; a relevant
+implementation is selected based on configured compilation features,
+or through auto-detection of the current target.</p>
+<p>In general, the following properties apply to finite field implementations:</p>
+<ul>
+<li>
+<p>An instance encapsulates a field element.</p>
+</li>
+<li>
+<p>The constant values <code>Self::ZERO</code> and <code>Self::ONE</code> contain the
+elements of value 0 and 1, respectively.</p>
+</li>
+<li>
+<p>Usual arithmetic operators can be used on field elements (<code>+</code>, <code>-</code>,
+<code>*</code>, <code>/</code>, and the compound assignments <code>+=</code>, <code>-=</code>, <code>*=</code> and <code>/=</code>).
+Division by zero is tolerated, and yields zero (regardless of the
+dividend). Operators can use both the raw types, and references
+thereof.</p>
+</li>
+<li>
+<p>Function <code>set_square(&amp;mut self)</code> squares a field element (in place).
+Corresponding function <code>square(self) -&gt; Self</code> returns the result
+as a new instance. These functions are somewhat faster than general
+multiplications. Sequences of multiple squarings can be performed
+with <code>set_xsquare(&amp;mut self, n: u32)</code> (and a corresponding <code>xsquare()</code>
+to get the result as a new instance).</p>
+</li>
+<li>
+<p>Function <code>set_neg(&amp;mut self)</code> negates the instance on which it is
+applied.</p>
+</li>
+<li>
+<p>Function <code>set_cond(&amp;mut self, a: &amp;Self, ctl: u32)</code> sets
+the instance to the value of the other instance <code>a</code> if <code>ctl</code> is
+equal to 0xFFFFFFFF, or leaves the instance value unmodified if
+<code>ctl</code> is equal to 0x00000000.</p>
+</li>
+<li>
+<p>Function <code>select(a0: &amp;Self, a1: &amp;Self, ctl: u32) -&gt; Self</code> returns
+a copy of <code>a0</code> if <code>ctl</code> is 0x00000000, or a copy of <code>a1</code> if
+<code>ctl</code> is 0xFFFFFFFF.</p>
+</li>
+<li>
+<p>Function <code>cswap(a: &amp;mut Self, b: &amp;mut Self, ctl: u32)</code>
+exchanges the contents of <code>a</code> and <code>b</code> if <code>ctl</code> is 0xFFFFFFFF,
+or leaves them unmodified if <code>ctl</code> is 0x00000000.</p>
+</li>
+<li>
+<p>Functions <code>set_half()</code>, <code>set_mul2()</code>, <code>set_mul4()</code>, <code>set_mul8()</code>,
+<code>set_mul16()</code> and <code>set_mul32()</code>, all applied on <code>&amp;mut self</code>,
+multiply their operand (in place) by 1/2, 2, 4, 8, 16 or 32,
+respectively. Corresponding functions <code>half()</code>, <code>mul2()</code>, <code>mul4()</code>,
+<code>mul8()</code>, <code>mul16()</code> and <code>mul32()</code> operate on <code>self</code> and return
+a new instance. These functions are normally faster than a
+generic multiplication in the field.</p>
+</li>
+<li>
+<p>Some fields also provide <code>set_mul3()</code> (and <code>mul3()</code>) for
+multiplication by 3.</p>
+</li>
+<li>
+<p>Some fields also provide <code>set_mul_small(&amp;mut self, x: u32)</code>
+(and <code>mul_small(self, x: 32) -&gt; Self</code>) for multiplication by a
+small 32-bit integer provided at runtime.</p>
+</li>
+<li>
+<p>Constant values can be defined with the const-qualified <code>w64le()</code>
+and <code>w64be()</code> functions, which take the value as four 64-bit limbs
+in little-endian and big-endian order, respectively. The 256-bit
+value is implicitly reduced modulo the field order.</p>
+</li>
+<li>
+<p>Non-const functions <code>from_w64le()</code> and <code>from_w64be()</code> are also
+provided; they yield the same output as, but are potentially faster
+than, the const functions <code>w64le()</code> and <code>w64be()</code>. Note that
+both the const and the non-const functions are safe (they should
+have no side-channels); the non-const functions are nonetheless
+preferred at runtime.</p>
+</li>
+<li>
+<p>Conversions from <code>i32</code>, <code>u32</code>, <code>i64</code>, <code>u64</code>, <code>i128</code> ans <code>u128</code>
+can use the functions <code>from_i32()</code>, <code>from_u32()</code>, and so on.</p>
+</li>
+<li>
+<p>Function <code>equals(self, rhs: Self) -&gt; u32</code> returns 0xFFFFFFFF
+if <code>self</code> and <code>rhs</code> represent the same value, or 0x00000000
+otherwise. Function <code>iszero(self) -&gt; u32</code> is a specialized
+subcase that compares <code>self</code> with zero.</p>
+</li>
+<li>
+<p>The <code>legendre(self) -&gt; i32</code> function returns the Legendre symbol
+for an element (0 for zero, +1 for non-zero squares, -1 for
+non-squares).</p>
+</li>
+<li>
+<p>The <code>batch_invert(xx: &amp;mut[Self])</code> function performs inversion
+of all field elements in the provided slice. It works by
+combining internal elements in batches (normally of 200 elements)
+and mutualizing the internal inversion; this is vastly faster
+than inverting each element independently. Elements of value zero
+are tolerated (the “inverse” of zero is zero).</p>
+</li>
+<li>
+<p>The <code>set_sqrt(&amp;mut self) -&gt; u32</code> function computes the square root
+of an element. On success, 0xFFFFFFFF is returned. On failure (input
+is not a square), the element is set to zero, and 0x00000000 is
+returned. The chosen square root is the one whose least significant
+bit (when represented as an integer lower than the field order) is
+a zero. The non-in-place variant of this function is
+<code>sqrt(self) -&gt; (Self, u32)</code>. Note that field implementations may
+not provide square root computations for all supported moduli.</p>
+</li>
+<li>
+<p>The <code>set_sqrt_ext(&amp;mut self) -&gt; u32</code> is similar to <code>set_sqrt()</code>,
+except that it set the element to a predictable value on failure;
+that value depends on the field and on the input value. For integers
+modulo a prime q = 3 mod 4, if the input value is x, and x is not
+a square, then the element is set to a square root of -x. For integers
+modulo a prime q = 5 mod 8, if the input value is x, and x is not
+a square, then the element is set to a square root of either 2<em>x or
+-2</em>x. A non-in-place variant is provided as
+<code>sqrt_ext(self) -&gt; (Self, u32)</code>. Note that field implementations may
+not provide square root computations for all supported moduli.</p>
+</li>
+<li>
+<p>Function <code>split_vartime(self) -&gt; (i128, i128)</code> returns two signed
+integers c0 and c1 such that <code>self</code> is equal to c0/c1. Note that
+if the field modulus is greater than about 1.73*2^253, then
+the two values c0 and c1 may be truncated. In all generality,
+<code>self</code> is equal to <code>(c0 + a*2^128) / (c1 + b*2^128)</code> for two
+integers <code>a</code> and <code>b</code> such that:</p>
+<ul>
+<li>
+<p>If the field modulus is at most 1.73*2^253, then <code>a</code> and <code>b</code>
+are both 0 (the returned values are exact).</p>
+</li>
+<li>
+<p>If the field modulus is between 1.73*2^253 and 1.73*2^255,
+than <code>a</code> and <code>b</code> may range between -1 and +1 (inclusive).</p>
+</li>
+<li>
+<p>For larger moduli (up to 2^256), <code>a</code> and <code>b</code> may range between
+-2 and +2 (inclusive).</p>
+</li>
+</ul>
+<p>This function uses Lagrange’s algorithm for lattice basis reduction
+in dimension 2. It is sufficiently fast to be considered for
+optimizing verification of Schnorr signatures. WARNING: this
+function is not constant-time; it MUST NOT be applied on secret
+data.</p>
+<p>This function is defined only for fields wioth a modulus less than
+2^256. It is not defined for larger fields.</p>
+</li>
+<li>
+<p>Function <code>encode(self) -&gt; [u8; Self::ENC_LEN]</code> encodes an element as
+bytes. Unsigned little-endian convention is used. The encoding length
+(<code>ENC_LEN</code>) is the length of the modulus, in bytes. Encoding is
+always canonical (i.e. the encoding always uses the integer which is
+lower than the field modulus).</p>
+</li>
+<li>
+<p>Function <code>set_decode_ct(&amp;mut self, buf: &amp;[u8]) -&gt; u32</code> decodes some
+bytes with the unsigned little-endian convention. If the source slice
+does not have the length of the modulus, then the decoding fails. If
+the source slice has the proper length, but the byte contents yield a
+non-canonical value, then decoding fails. On success, the element
+is set to the decoded value, and 0xFFFFFFFF is returned; on failure,
+the element is set to zero, and 0x00000000 is returned. If the source
+has the proper length, then not only the decoded value, but also the
+operation outcome (success or failure), are shielded from side-channel
+attacks. A non-in-place variant of this function is provided as
+<code>decode_ct(buf: &amp;[u8]) -&gt; (Self, u32)</code>.</p>
+</li>
+<li>
+<p>Function <code>set_decode_reduce(buf: &amp;[u8])</code> decodes some bytes
+with the unsigned little-endian convention. The obtained integer is
+reduced modulo the field order, so the process never fails.
+It is fully constant-time (only the length of the source slice
+may leak through timing-based side channels). A non-in-place
+variant is provided as <code>decode_reduce(buf: &amp;[u8]) -&gt; Self</code>.</p>
+</li>
+<li>
+<p>Function <code>decode(buf: &amp;[u8]) -&gt; Option&lt;Self&gt;</code> decodes some bytes
+with the unsigned little-endian convention. This is a wrapper
+around <code>decode_ct()</code>, except that it returns <code>None</code> on decoding
+failure. Due to the use of the option type, side-channel analysis
+may reveal to outsiders whether the decoding succeeded or not.</p>
+</li>
+</ul>
+</div></details><h2 id="reexports" class="section-header">Re-exports<a href="#reexports" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name" id="reexport.Zu128"><code>pub use w64::<a class="struct" href="w64/struct.Zu128.html" title="struct crrl::backend::w64::Zu128">Zu128</a>;</code></div></li><li><div class="item-name" id="reexport.Zu256"><code>pub use w64::<a class="struct" href="w64/struct.Zu256.html" title="struct crrl::backend::w64::Zu256">Zu256</a>;</code></div></li><li><div class="item-name" id="reexport.Zu384"><code>pub use w64::<a class="struct" href="w64/struct.Zu384.html" title="struct crrl::backend::w64::Zu384">Zu384</a>;</code></div></li><li><div class="item-name" id="reexport.GF255"><code>pub use w64::<a class="struct" href="w64/gf255_m64/struct.GF255.html" title="struct crrl::backend::w64::gf255_m64::GF255">GF255</a>;</code></div></li><li><div class="item-name" id="reexport.GF25519"><code>pub use w64::<a class="type" href="w64/type.GF25519.html" title="type crrl::backend::w64::GF25519">GF25519</a>;</code></div></li><li><div class="item-name" id="reexport.GF255e"><code>pub use w64::<a class="type" href="w64/type.GF255e.html" title="type crrl::backend::w64::GF255e">GF255e</a>;</code></div></li><li><div class="item-name" id="reexport.GF255s"><code>pub use w64::<a class="type" href="w64/type.GF255s.html" title="type crrl::backend::w64::GF255s">GF255s</a>;</code></div></li><li><div class="item-name" id="reexport.ModInt256"><code>pub use w64::<a class="struct" href="w64/modint/struct.ModInt256.html" title="struct crrl::backend::w64::modint::ModInt256">ModInt256</a>;</code></div></li><li><div class="item-name" id="reexport.ModInt256ct"><code>pub use w64::<a class="type" href="w64/type.ModInt256ct.html" title="type crrl::backend::w64::ModInt256ct">ModInt256ct</a>;</code></div></li><li><div class="item-name" id="reexport.GFsecp256k1"><code>pub use w64::<a class="struct" href="w64/gfsecp256k1/struct.GFsecp256k1.html" title="struct crrl::backend::w64::gfsecp256k1::GFsecp256k1">GFsecp256k1</a>;</code></div></li><li><div class="item-name" id="reexport.GFp256"><code>pub use w64::<a class="type" href="w64/type.GFp256.html" title="type crrl::backend::w64::GFp256">GFp256</a>;</code></div></li><li><div class="item-name" id="reexport.GF448"><code>pub use w64::<a class="struct" href="w64/gf448/struct.GF448.html" title="struct crrl::backend::w64::gf448::GF448">GF448</a>;</code></div></li><li><div class="item-name" id="reexport.GFb127"><code>pub use w64::<a class="struct" href="w64/gfb254_m64/struct.GFb127.html" title="struct crrl::backend::w64::gfb254_m64::GFb127">GFb127</a>;</code></div></li><li><div class="item-name" id="reexport.GFb254"><code>pub use w64::<a class="struct" href="w64/gfb254_m64/struct.GFb254.html" title="struct crrl::backend::w64::gfb254_m64::GFb254">GFb254</a>;</code></div></li><li><div class="item-name" id="reexport.define_gfgen"><code>pub use w64::gfgen::<a class="macro" href="w64/gfgen/macro.define_gfgen.html" title="macro crrl::backend::w64::gfgen::define_gfgen">define_gfgen</a>;</code></div></li><li><div class="item-name" id="reexport.define_gfgen_tests"><code>pub use w64::gfgen::<a class="macro" href="w64/gfgen/macro.define_gfgen_tests.html" title="macro crrl::backend::w64::gfgen::define_gfgen_tests">define_gfgen_tests</a>;</code></div></li></ul><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="w64/index.html" title="mod crrl::backend::w64">w64</a></div></li></ul></section></div></main></body></html>

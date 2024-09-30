@@ -1,0 +1,1859 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/kaue/.cargo/registry/src/index.crates.io-6f17d22bba15001f/crrl-0.9.0/src/lms.rs`."><title>lms.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="crrl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.1 (3f5fd8dd4 2024-08-06)" data-channel="1.80.1" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<a href="#2" id="2">2</a>
+<a href="#3" id="3">3</a>
+<a href="#4" id="4">4</a>
+<a href="#5" id="5">5</a>
+<a href="#6" id="6">6</a>
+<a href="#7" id="7">7</a>
+<a href="#8" id="8">8</a>
+<a href="#9" id="9">9</a>
+<a href="#10" id="10">10</a>
+<a href="#11" id="11">11</a>
+<a href="#12" id="12">12</a>
+<a href="#13" id="13">13</a>
+<a href="#14" id="14">14</a>
+<a href="#15" id="15">15</a>
+<a href="#16" id="16">16</a>
+<a href="#17" id="17">17</a>
+<a href="#18" id="18">18</a>
+<a href="#19" id="19">19</a>
+<a href="#20" id="20">20</a>
+<a href="#21" id="21">21</a>
+<a href="#22" id="22">22</a>
+<a href="#23" id="23">23</a>
+<a href="#24" id="24">24</a>
+<a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
+<a href="#29" id="29">29</a>
+<a href="#30" id="30">30</a>
+<a href="#31" id="31">31</a>
+<a href="#32" id="32">32</a>
+<a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
+<a href="#36" id="36">36</a>
+<a href="#37" id="37">37</a>
+<a href="#38" id="38">38</a>
+<a href="#39" id="39">39</a>
+<a href="#40" id="40">40</a>
+<a href="#41" id="41">41</a>
+<a href="#42" id="42">42</a>
+<a href="#43" id="43">43</a>
+<a href="#44" id="44">44</a>
+<a href="#45" id="45">45</a>
+<a href="#46" id="46">46</a>
+<a href="#47" id="47">47</a>
+<a href="#48" id="48">48</a>
+<a href="#49" id="49">49</a>
+<a href="#50" id="50">50</a>
+<a href="#51" id="51">51</a>
+<a href="#52" id="52">52</a>
+<a href="#53" id="53">53</a>
+<a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
+<a href="#439" id="439">439</a>
+<a href="#440" id="440">440</a>
+<a href="#441" id="441">441</a>
+<a href="#442" id="442">442</a>
+<a href="#443" id="443">443</a>
+<a href="#444" id="444">444</a>
+<a href="#445" id="445">445</a>
+<a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
+<a href="#448" id="448">448</a>
+<a href="#449" id="449">449</a>
+<a href="#450" id="450">450</a>
+<a href="#451" id="451">451</a>
+<a href="#452" id="452">452</a>
+<a href="#453" id="453">453</a>
+<a href="#454" id="454">454</a>
+<a href="#455" id="455">455</a>
+<a href="#456" id="456">456</a>
+<a href="#457" id="457">457</a>
+<a href="#458" id="458">458</a>
+<a href="#459" id="459">459</a>
+<a href="#460" id="460">460</a>
+<a href="#461" id="461">461</a>
+<a href="#462" id="462">462</a>
+<a href="#463" id="463">463</a>
+<a href="#464" id="464">464</a>
+<a href="#465" id="465">465</a>
+<a href="#466" id="466">466</a>
+<a href="#467" id="467">467</a>
+<a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a>
+<a href="#470" id="470">470</a>
+<a href="#471" id="471">471</a>
+<a href="#472" id="472">472</a>
+<a href="#473" id="473">473</a>
+<a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a>
+<a href="#476" id="476">476</a>
+<a href="#477" id="477">477</a>
+<a href="#478" id="478">478</a>
+<a href="#479" id="479">479</a>
+<a href="#480" id="480">480</a>
+<a href="#481" id="481">481</a>
+<a href="#482" id="482">482</a>
+<a href="#483" id="483">483</a>
+<a href="#484" id="484">484</a>
+<a href="#485" id="485">485</a>
+<a href="#486" id="486">486</a>
+<a href="#487" id="487">487</a>
+<a href="#488" id="488">488</a>
+<a href="#489" id="489">489</a>
+<a href="#490" id="490">490</a>
+<a href="#491" id="491">491</a>
+<a href="#492" id="492">492</a>
+<a href="#493" id="493">493</a>
+<a href="#494" id="494">494</a>
+<a href="#495" id="495">495</a>
+<a href="#496" id="496">496</a>
+<a href="#497" id="497">497</a>
+<a href="#498" id="498">498</a>
+<a href="#499" id="499">499</a>
+<a href="#500" id="500">500</a>
+<a href="#501" id="501">501</a>
+<a href="#502" id="502">502</a>
+<a href="#503" id="503">503</a>
+<a href="#504" id="504">504</a>
+<a href="#505" id="505">505</a>
+<a href="#506" id="506">506</a>
+<a href="#507" id="507">507</a>
+<a href="#508" id="508">508</a>
+<a href="#509" id="509">509</a>
+<a href="#510" id="510">510</a>
+<a href="#511" id="511">511</a>
+<a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a>
+<a href="#519" id="519">519</a>
+<a href="#520" id="520">520</a>
+<a href="#521" id="521">521</a>
+<a href="#522" id="522">522</a>
+<a href="#523" id="523">523</a>
+<a href="#524" id="524">524</a>
+<a href="#525" id="525">525</a>
+<a href="#526" id="526">526</a>
+<a href="#527" id="527">527</a>
+<a href="#528" id="528">528</a>
+<a href="#529" id="529">529</a>
+<a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
+<a href="#538" id="538">538</a>
+<a href="#539" id="539">539</a>
+<a href="#540" id="540">540</a>
+<a href="#541" id="541">541</a>
+<a href="#542" id="542">542</a>
+<a href="#543" id="543">543</a>
+<a href="#544" id="544">544</a>
+<a href="#545" id="545">545</a>
+<a href="#546" id="546">546</a>
+<a href="#547" id="547">547</a>
+<a href="#548" id="548">548</a>
+<a href="#549" id="549">549</a>
+<a href="#550" id="550">550</a>
+<a href="#551" id="551">551</a>
+<a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
+<a href="#554" id="554">554</a>
+<a href="#555" id="555">555</a>
+<a href="#556" id="556">556</a>
+<a href="#557" id="557">557</a>
+<a href="#558" id="558">558</a>
+<a href="#559" id="559">559</a>
+<a href="#560" id="560">560</a>
+<a href="#561" id="561">561</a>
+<a href="#562" id="562">562</a>
+<a href="#563" id="563">563</a>
+<a href="#564" id="564">564</a>
+<a href="#565" id="565">565</a>
+<a href="#566" id="566">566</a>
+<a href="#567" id="567">567</a>
+<a href="#568" id="568">568</a>
+<a href="#569" id="569">569</a>
+<a href="#570" id="570">570</a>
+<a href="#571" id="571">571</a>
+<a href="#572" id="572">572</a>
+<a href="#573" id="573">573</a>
+<a href="#574" id="574">574</a>
+<a href="#575" id="575">575</a>
+<a href="#576" id="576">576</a>
+<a href="#577" id="577">577</a>
+<a href="#578" id="578">578</a>
+<a href="#579" id="579">579</a>
+<a href="#580" id="580">580</a>
+<a href="#581" id="581">581</a>
+<a href="#582" id="582">582</a>
+<a href="#583" id="583">583</a>
+<a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+<a href="#590" id="590">590</a>
+<a href="#591" id="591">591</a>
+<a href="#592" id="592">592</a>
+<a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+<a href="#599" id="599">599</a>
+<a href="#600" id="600">600</a>
+<a href="#601" id="601">601</a>
+<a href="#602" id="602">602</a>
+<a href="#603" id="603">603</a>
+<a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
+<a href="#606" id="606">606</a>
+<a href="#607" id="607">607</a>
+<a href="#608" id="608">608</a>
+<a href="#609" id="609">609</a>
+<a href="#610" id="610">610</a>
+<a href="#611" id="611">611</a>
+<a href="#612" id="612">612</a>
+<a href="#613" id="613">613</a>
+<a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
+<a href="#616" id="616">616</a>
+<a href="#617" id="617">617</a>
+<a href="#618" id="618">618</a>
+<a href="#619" id="619">619</a>
+<a href="#620" id="620">620</a>
+<a href="#621" id="621">621</a>
+<a href="#622" id="622">622</a>
+<a href="#623" id="623">623</a>
+<a href="#624" id="624">624</a>
+<a href="#625" id="625">625</a>
+<a href="#626" id="626">626</a>
+<a href="#627" id="627">627</a>
+<a href="#628" id="628">628</a>
+<a href="#629" id="629">629</a>
+<a href="#630" id="630">630</a>
+<a href="#631" id="631">631</a>
+<a href="#632" id="632">632</a>
+<a href="#633" id="633">633</a>
+<a href="#634" id="634">634</a>
+<a href="#635" id="635">635</a>
+<a href="#636" id="636">636</a>
+<a href="#637" id="637">637</a>
+<a href="#638" id="638">638</a>
+<a href="#639" id="639">639</a>
+<a href="#640" id="640">640</a>
+<a href="#641" id="641">641</a>
+<a href="#642" id="642">642</a>
+<a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a>
+<a href="#647" id="647">647</a>
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a>
+<a href="#651" id="651">651</a>
+<a href="#652" id="652">652</a>
+<a href="#653" id="653">653</a>
+<a href="#654" id="654">654</a>
+<a href="#655" id="655">655</a>
+<a href="#656" id="656">656</a>
+<a href="#657" id="657">657</a>
+<a href="#658" id="658">658</a>
+<a href="#659" id="659">659</a>
+<a href="#660" id="660">660</a>
+<a href="#661" id="661">661</a>
+<a href="#662" id="662">662</a>
+<a href="#663" id="663">663</a>
+<a href="#664" id="664">664</a>
+<a href="#665" id="665">665</a>
+<a href="#666" id="666">666</a>
+<a href="#667" id="667">667</a>
+<a href="#668" id="668">668</a>
+<a href="#669" id="669">669</a>
+<a href="#670" id="670">670</a>
+<a href="#671" id="671">671</a>
+<a href="#672" id="672">672</a>
+<a href="#673" id="673">673</a>
+<a href="#674" id="674">674</a>
+<a href="#675" id="675">675</a>
+<a href="#676" id="676">676</a>
+<a href="#677" id="677">677</a>
+<a href="#678" id="678">678</a>
+<a href="#679" id="679">679</a>
+<a href="#680" id="680">680</a>
+<a href="#681" id="681">681</a>
+<a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a>
+<a href="#687" id="687">687</a>
+<a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a>
+<a href="#690" id="690">690</a>
+<a href="#691" id="691">691</a>
+<a href="#692" id="692">692</a>
+<a href="#693" id="693">693</a>
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a>
+<a href="#764" id="764">764</a>
+<a href="#765" id="765">765</a>
+<a href="#766" id="766">766</a>
+<a href="#767" id="767">767</a>
+<a href="#768" id="768">768</a>
+<a href="#769" id="769">769</a>
+<a href="#770" id="770">770</a>
+<a href="#771" id="771">771</a>
+<a href="#772" id="772">772</a>
+<a href="#773" id="773">773</a>
+<a href="#774" id="774">774</a>
+<a href="#775" id="775">775</a>
+<a href="#776" id="776">776</a>
+<a href="#777" id="777">777</a>
+<a href="#778" id="778">778</a>
+<a href="#779" id="779">779</a>
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
+<a href="#789" id="789">789</a>
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a>
+<a href="#809" id="809">809</a>
+<a href="#810" id="810">810</a>
+<a href="#811" id="811">811</a>
+<a href="#812" id="812">812</a>
+<a href="#813" id="813">813</a>
+<a href="#814" id="814">814</a>
+<a href="#815" id="815">815</a>
+<a href="#816" id="816">816</a>
+<a href="#817" id="817">817</a>
+<a href="#818" id="818">818</a>
+<a href="#819" id="819">819</a>
+<a href="#820" id="820">820</a>
+<a href="#821" id="821">821</a>
+<a href="#822" id="822">822</a>
+<a href="#823" id="823">823</a>
+<a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a>
+<a href="#828" id="828">828</a>
+<a href="#829" id="829">829</a>
+<a href="#830" id="830">830</a>
+<a href="#831" id="831">831</a>
+<a href="#832" id="832">832</a>
+<a href="#833" id="833">833</a>
+<a href="#834" id="834">834</a>
+<a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a>
+<a href="#837" id="837">837</a>
+<a href="#838" id="838">838</a>
+<a href="#839" id="839">839</a>
+<a href="#840" id="840">840</a>
+<a href="#841" id="841">841</a>
+<a href="#842" id="842">842</a>
+<a href="#843" id="843">843</a>
+<a href="#844" id="844">844</a>
+<a href="#845" id="845">845</a>
+<a href="#846" id="846">846</a>
+<a href="#847" id="847">847</a>
+<a href="#848" id="848">848</a>
+<a href="#849" id="849">849</a>
+<a href="#850" id="850">850</a>
+<a href="#851" id="851">851</a>
+<a href="#852" id="852">852</a>
+<a href="#853" id="853">853</a>
+<a href="#854" id="854">854</a>
+<a href="#855" id="855">855</a>
+<a href="#856" id="856">856</a>
+<a href="#857" id="857">857</a>
+<a href="#858" id="858">858</a>
+<a href="#859" id="859">859</a>
+<a href="#860" id="860">860</a>
+<a href="#861" id="861">861</a>
+<a href="#862" id="862">862</a>
+<a href="#863" id="863">863</a>
+<a href="#864" id="864">864</a>
+<a href="#865" id="865">865</a>
+<a href="#866" id="866">866</a>
+<a href="#867" id="867">867</a>
+<a href="#868" id="868">868</a>
+<a href="#869" id="869">869</a>
+<a href="#870" id="870">870</a>
+<a href="#871" id="871">871</a>
+<a href="#872" id="872">872</a>
+<a href="#873" id="873">873</a>
+<a href="#874" id="874">874</a>
+<a href="#875" id="875">875</a>
+<a href="#876" id="876">876</a>
+<a href="#877" id="877">877</a>
+<a href="#878" id="878">878</a>
+<a href="#879" id="879">879</a>
+<a href="#880" id="880">880</a>
+<a href="#881" id="881">881</a>
+<a href="#882" id="882">882</a>
+<a href="#883" id="883">883</a>
+<a href="#884" id="884">884</a>
+<a href="#885" id="885">885</a>
+<a href="#886" id="886">886</a>
+<a href="#887" id="887">887</a>
+<a href="#888" id="888">888</a>
+<a href="#889" id="889">889</a>
+<a href="#890" id="890">890</a>
+<a href="#891" id="891">891</a>
+<a href="#892" id="892">892</a>
+<a href="#893" id="893">893</a>
+<a href="#894" id="894">894</a>
+<a href="#895" id="895">895</a>
+<a href="#896" id="896">896</a>
+<a href="#897" id="897">897</a>
+<a href="#898" id="898">898</a>
+<a href="#899" id="899">899</a>
+<a href="#900" id="900">900</a>
+<a href="#901" id="901">901</a>
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a>
+<a href="#904" id="904">904</a>
+<a href="#905" id="905">905</a>
+<a href="#906" id="906">906</a>
+<a href="#907" id="907">907</a>
+<a href="#908" id="908">908</a>
+<a href="#909" id="909">909</a>
+<a href="#910" id="910">910</a>
+<a href="#911" id="911">911</a>
+<a href="#912" id="912">912</a>
+<a href="#913" id="913">913</a>
+<a href="#914" id="914">914</a>
+<a href="#915" id="915">915</a>
+<a href="#916" id="916">916</a>
+<a href="#917" id="917">917</a>
+<a href="#918" id="918">918</a>
+<a href="#919" id="919">919</a>
+<a href="#920" id="920">920</a>
+<a href="#921" id="921">921</a>
+<a href="#922" id="922">922</a>
+<a href="#923" id="923">923</a>
+<a href="#924" id="924">924</a>
+<a href="#925" id="925">925</a>
+<a href="#926" id="926">926</a>
+<a href="#927" id="927">927</a>
+<a href="#928" id="928">928</a>
+<a href="#929" id="929">929</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! LMS implementation.
+//!
+//! This follows RFC 8554, and additional parameter sets from
+//! draft-fluhrer-lms-more-parm-sets-09.txt (which itself copies
+//! the parameters from NIST SP 800-208).
+//!
+//! WARNING: LMS is a stateful signature scheme; each signature modifies
+//! the private key. If the same private key state is used to generate
+//! two signatures (even if both are on the same data), then attackers
+//! observing the two signature values learn enough to make forgeries.
+//! This implementation always mutates the `PrivateKey` structure when
+//! generating a signature, but it is up to the caller to ensure that the
+//! new private key state is properly committed to stable storage before
+//! showing the signature value to any third party.
+//!
+//! This code was written mostly for verifying the test vectors in the
+//! parameter sets in the new draft; it does not include facilities for
+//! serialization of private and public keys. It also does NOT implement
+//! HSS, the hierarchical scheme that builds on top of LMS (in RFC 8554,
+//! section 6).
+
+</span><span class="comment">// We use the constant names from RFC 8554, which do not following the
+// default casing style rules of Rust.
+</span><span class="attr">#![allow(non_snake_case)]
+#![allow(non_upper_case_globals)]
+
+</span><span class="macro">macro_rules!</span> define_lms_core { () =&gt; {
+
+    <span class="kw">use crate</span>::{CryptoRng, RngCore};
+    <span class="kw">use </span>core::convert::TryFrom;
+
+    <span class="attr">#[derive(Clone, Copy, Debug)]
+    </span><span class="kw">pub struct </span>PrivateKey {
+        I: [u8; <span class="number">16</span>],
+        SEED: [u8; m],
+        current_leaf: u32,
+        T: [[u8; m]; <span class="number">1usize </span>&lt;&lt; (h + <span class="number">1</span>)],
+    }
+
+    <span class="attr">#[derive(Clone, Copy, Debug)]
+    </span><span class="kw">pub struct </span>PublicKey {
+        I: [u8; <span class="number">16</span>],
+        T1: [u8; m],
+    }
+
+    <span class="kw">const </span>p: usize = make_p();
+    <span class="kw">const </span>ls: usize = make_ls();
+
+    <span class="kw">const fn </span>make_p() -&gt; usize {
+        <span class="kw">let </span>(zp, <span class="kw">_</span>) = make_p_ls();
+        zp
+    }
+
+    <span class="kw">const fn </span>make_ls() -&gt; usize {
+        <span class="kw">let </span>(<span class="kw">_</span>, zls) = make_p_ls();
+        zls
+    }
+
+    <span class="kw">const fn </span>make_p_ls() -&gt; (usize, usize) {
+        <span class="kw">let </span>u = (<span class="number">8 </span>* n + w - <span class="number">1</span>) / w;
+        <span class="kw">let </span>x = ((<span class="number">1usize </span>&lt;&lt; w) - <span class="number">1</span>) * u;
+        <span class="kw">let </span>(x0, t0) = <span class="kw">if </span>x &gt; <span class="number">0xFFFF </span>{ (x &gt;&gt; <span class="number">16</span>, <span class="number">16</span>) } <span class="kw">else </span>{ (x, <span class="number">0</span>) };
+        <span class="kw">let </span>(x1, t1) = <span class="kw">if </span>x0 &gt; <span class="number">0xFF </span>{ (x0 &gt;&gt; <span class="number">8</span>, <span class="number">8</span>) } <span class="kw">else </span>{ (x0, <span class="number">0</span>) };
+        <span class="kw">let </span>(x2, t2) = <span class="kw">if </span>x1 &gt; <span class="number">0x0F </span>{ (x1 &gt;&gt; <span class="number">4</span>, <span class="number">4</span>) } <span class="kw">else </span>{ (x1, <span class="number">0</span>) };
+        <span class="kw">let </span>(x3, t3) = <span class="kw">if </span>x2 &gt; <span class="number">0x03 </span>{ (x2 &gt;&gt; <span class="number">2</span>, <span class="number">2</span>) } <span class="kw">else </span>{ (x2, <span class="number">0</span>) };
+        <span class="kw">let </span>t4 = <span class="kw">if </span>x3 &gt; <span class="number">0x01 </span>{ <span class="number">1 </span>} <span class="kw">else </span>{ <span class="number">0 </span>};
+        <span class="kw">let </span>lg = t0 + t1 + t2 + t3 + t4;
+        <span class="kw">let </span>v = (lg + w) / w;
+        <span class="kw">let </span>zp = u + v;
+        <span class="kw">let </span>zls = <span class="number">16 </span>- (v * w);
+        (zp, zls)
+    }
+
+    <span class="kw">const </span>Z: [u8; <span class="number">0</span>] = [];
+    <span class="kw">const </span>D_PBLC: [u8; <span class="number">2</span>] = [ <span class="number">0x80</span>, <span class="number">0x80</span>, ];
+    <span class="kw">const </span>D_MESG: [u8; <span class="number">2</span>] = [ <span class="number">0x81</span>, <span class="number">0x81</span>, ];
+    <span class="kw">const </span>D_LEAF: [u8; <span class="number">2</span>] = [ <span class="number">0x82</span>, <span class="number">0x82</span>, ];
+    <span class="kw">const </span>D_INTR: [u8; <span class="number">2</span>] = [ <span class="number">0x83</span>, <span class="number">0x83</span>, ];
+
+    <span class="kw">const </span>ots_siglen: usize = <span class="number">4 </span>+ n + n * p;
+    <span class="kw">const </span>lms_siglen: usize = <span class="number">4 </span>+ ots_siglen + <span class="number">4 </span>+ h * m;
+
+    <span class="kw">fn </span>checksum(Q: <span class="kw-2">&amp;</span>[u8]) -&gt; u16 {
+        <span class="kw">let </span><span class="kw-2">mut </span>sum = <span class="number">0u16</span>;
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..((n * <span class="number">8</span>) / w) {
+            sum = sum.wrapping_add((<span class="number">1u16 </span>&lt;&lt; w) - <span class="number">1</span>);
+            sum = sum.wrapping_sub(coef(Q, i) <span class="kw">as </span>u16);
+        }
+        sum &lt;&lt; ls
+    }
+
+    <span class="kw">fn </span>coef(Q: <span class="kw-2">&amp;</span>[u8], i: usize) -&gt; u8 {
+        <span class="kw">let </span>m8 = ((<span class="number">1u32 </span>&lt;&lt; w) - <span class="number">1</span>) <span class="kw">as </span>u8;
+        (Q[(i * w) / <span class="number">8</span>] &gt;&gt; (<span class="number">8 </span>- (w * (i % (<span class="number">8 </span>/ w)) + w))) &amp; m8
+    }
+
+    <span class="kw">impl </span>PrivateKey {
+
+        <span class="kw">pub fn </span>generate&lt;T: CryptoRng + RngCore&gt;(rng: <span class="kw-2">&amp;mut </span>T) -&gt; <span class="self">Self </span>{
+            <span class="kw">let </span><span class="kw-2">mut </span>I = [<span class="number">0u8</span>; <span class="number">16</span>];
+            <span class="kw">let </span><span class="kw-2">mut </span>SEED = [<span class="number">0u8</span>; m];
+            rng.fill_bytes(<span class="kw-2">&amp;mut </span>I);
+            rng.fill_bytes(<span class="kw-2">&amp;mut </span>SEED);
+            <span class="kw">let </span>current_leaf = <span class="number">0u32</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>sk = <span class="self">Self </span>{
+                I, SEED, current_leaf,
+                T: [[<span class="number">0u8</span>; m]; <span class="number">1usize </span>&lt;&lt; (h + <span class="number">1</span>)],
+            };
+            sk.compute_tree();
+            sk
+        }
+
+        <span class="kw">fn </span>compute_tree(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+            <span class="kw">for </span>r <span class="kw">in </span>(<span class="number">1u32 </span>&lt;&lt; h)..(<span class="number">1u32 </span>&lt;&lt; (h + <span class="number">1</span>)) {
+                <span class="kw">let </span>q = r - (<span class="number">1u32 </span>&lt;&lt; h);
+                <span class="kw">let </span>x = <span class="self">self</span>.make_ots_x(q);
+                <span class="kw">let </span>y = <span class="self">self</span>.make_ots_pub_y(q, <span class="kw-2">&amp;</span>x);
+                <span class="self">self</span>.T[r <span class="kw">as </span>usize] = Hm(<span class="kw-2">&amp;</span><span class="self">self</span>.I, <span class="kw-2">&amp;</span>r.to_be_bytes(), <span class="kw-2">&amp;</span>D_LEAF,
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.make_ots_pub_hash(q, <span class="kw-2">&amp;</span>y), <span class="kw-2">&amp;</span>Z);
+            }
+            <span class="kw">for </span>r <span class="kw">in </span>(<span class="number">1</span>..(<span class="number">1u32 </span>&lt;&lt; h)).rev() {
+                <span class="self">self</span>.T[r <span class="kw">as </span>usize] = Hm(<span class="kw-2">&amp;</span><span class="self">self</span>.I, <span class="kw-2">&amp;</span>r.to_be_bytes(), <span class="kw-2">&amp;</span>D_INTR,
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.T[(<span class="number">2 </span>* r) <span class="kw">as </span>usize], <span class="kw-2">&amp;</span><span class="self">self</span>.T[(<span class="number">2 </span>* r + <span class="number">1</span>) <span class="kw">as </span>usize]);
+            }
+        }
+
+        <span class="kw">pub fn </span>compute_public(<span class="self">self</span>) -&gt; PublicKey {
+            PublicKey { I: <span class="self">self</span>.I, T1: <span class="self">self</span>.T[<span class="number">1</span>] }
+        }
+
+        <span class="kw">fn </span>make_ots_x(<span class="self">self</span>, q: u32) -&gt; [[u8; n]; p] {
+            <span class="kw">let </span><span class="kw-2">mut </span>x = [[<span class="number">0u8</span>; n]; p];
+            <span class="kw">let </span>eq = q.to_be_bytes();
+            <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..p {
+                x[i] = Hn(<span class="kw-2">&amp;</span><span class="self">self</span>.I, <span class="kw-2">&amp;</span>eq, <span class="kw-2">&amp;</span>(i <span class="kw">as </span>u16).to_be_bytes(),
+                    <span class="kw-2">&amp;</span>[<span class="number">0xFFu8</span>], <span class="kw-2">&amp;</span><span class="self">self</span>.SEED);
+            }
+            x
+        }
+
+        <span class="kw">fn </span>make_ots_pub_y(<span class="self">self</span>, q: u32, x: <span class="kw-2">&amp;</span>[[u8; n]; p]) -&gt; [[u8; n]; p] {
+            <span class="kw">let </span><span class="kw-2">mut </span>y = [[<span class="number">0u8</span>; n]; p];
+            <span class="kw">let </span>eq = q.to_be_bytes();
+            <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..p {
+                <span class="kw">let </span><span class="kw-2">mut </span>tmp = x[i];
+                <span class="kw">for </span>j <span class="kw">in </span><span class="number">0</span>..((<span class="number">1 </span>&lt;&lt; w) - <span class="number">1</span>) {
+                    tmp = Hn(<span class="kw-2">&amp;</span><span class="self">self</span>.I, <span class="kw-2">&amp;</span>eq, <span class="kw-2">&amp;</span>(i <span class="kw">as </span>u16).to_be_bytes(),
+                        <span class="kw-2">&amp;</span>[j <span class="kw">as </span>u8], <span class="kw-2">&amp;</span>tmp);
+                }
+                y[i] = tmp;
+            }
+            y
+        }
+
+        <span class="kw">fn </span>make_ots_pub_hash(<span class="self">self</span>, q: u32, y: <span class="kw-2">&amp;</span>[[u8; n]; p]) -&gt; [u8; n] {
+            Hnx(<span class="kw-2">&amp;</span><span class="self">self</span>.I, <span class="kw-2">&amp;</span>q.to_be_bytes(), <span class="kw-2">&amp;</span>D_PBLC, <span class="kw-2">&amp;</span>y)
+        }
+
+        <span class="kw">fn </span>ots_sign&lt;T: CryptoRng + RngCore&gt;(<span class="self">self</span>, rng: <span class="kw-2">&amp;mut </span>T,
+            q: u32, msg: <span class="kw-2">&amp;</span>[u8]) -&gt; [u8; ots_siglen]
+        {
+            <span class="kw">let </span><span class="kw-2">mut </span>sig = [<span class="number">0u8</span>; ots_siglen];
+            sig[<span class="number">0</span>..<span class="number">4</span>].copy_from_slice(<span class="kw-2">&amp;</span>ots_type.to_be_bytes());
+
+            <span class="kw">let </span><span class="kw-2">mut </span>C = [<span class="number">0u8</span>; n];
+            rng.fill_bytes(<span class="kw-2">&amp;mut </span>C);
+            sig[<span class="number">4</span>..(n + <span class="number">4</span>)].copy_from_slice(<span class="kw-2">&amp;</span>C);
+
+            <span class="kw">let </span>Q = Hn(<span class="kw-2">&amp;</span><span class="self">self</span>.I, <span class="kw-2">&amp;</span>q.to_be_bytes(), <span class="kw-2">&amp;</span>D_MESG, <span class="kw-2">&amp;</span>C, msg);
+            <span class="kw">let </span><span class="kw-2">mut </span>Qck = [<span class="number">0u8</span>; n + <span class="number">2</span>];
+            Qck[..n].copy_from_slice(<span class="kw-2">&amp;</span>Q);
+            Qck[n..].copy_from_slice(<span class="kw-2">&amp;</span>(checksum(<span class="kw-2">&amp;</span>Q).to_be_bytes()));
+            <span class="kw">let </span>x = <span class="self">self</span>.make_ots_x(q);
+            <span class="kw">let </span>eq = q.to_be_bytes();
+            <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..p {
+                <span class="kw">let </span>a = coef(<span class="kw-2">&amp;</span>Qck, i);
+                <span class="kw">let </span><span class="kw-2">mut </span>tmp = x[i];
+                <span class="kw">for </span>j <span class="kw">in </span><span class="number">0</span>..(a <span class="kw">as </span>usize) {
+                    tmp = Hn(<span class="kw-2">&amp;</span><span class="self">self</span>.I, <span class="kw-2">&amp;</span>eq, <span class="kw-2">&amp;</span>(i <span class="kw">as </span>u16).to_be_bytes(),
+                        <span class="kw-2">&amp;</span>[j <span class="kw">as </span>u8], <span class="kw-2">&amp;</span>tmp);
+                }
+                sig[(<span class="number">4 </span>+ n * (i + <span class="number">1</span>))..(<span class="number">4 </span>+ n * (i + <span class="number">2</span>))].copy_from_slice(<span class="kw-2">&amp;</span>tmp);
+            }
+            sig
+        }
+
+        <span class="kw">pub fn </span>sign&lt;T: CryptoRng + RngCore&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, rng: <span class="kw-2">&amp;mut </span>T, msg: <span class="kw-2">&amp;</span>[u8])
+            -&gt; <span class="prelude-ty">Option</span>&lt;[u8; <span class="number">4 </span>+ ots_siglen + <span class="number">4 </span>+ h * m]&gt;
+        {
+            <span class="kw">let </span>q = <span class="self">self</span>.current_leaf;
+            <span class="kw">if </span>q &gt;= (<span class="number">1u32 </span>&lt;&lt; h) {
+                <span class="kw">return </span><span class="prelude-val">None</span>;
+            }
+            <span class="self">self</span>.current_leaf = q + <span class="number">1</span>;
+            <span class="kw">let </span>ots_sig = <span class="self">self</span>.ots_sign(rng, q, msg);
+            <span class="kw">let </span><span class="kw-2">mut </span>sig = [<span class="number">0u8</span>; <span class="number">4 </span>+ ots_siglen + <span class="number">4 </span>+ h * m];
+            sig[<span class="number">0</span>..<span class="number">4</span>].copy_from_slice(<span class="kw-2">&amp;</span>q.to_be_bytes());
+            sig[<span class="number">4</span>..(ots_siglen + <span class="number">4</span>)].copy_from_slice(<span class="kw-2">&amp;</span>ots_sig);
+            sig[(ots_siglen + <span class="number">4</span>)..(ots_siglen + <span class="number">8</span>)].copy_from_slice(<span class="kw-2">&amp;</span>key_type.to_be_bytes());
+            <span class="kw">let </span><span class="kw-2">mut </span>r = q + (<span class="number">1u32 </span>&lt;&lt; h);
+            <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..h {
+                <span class="kw">let </span>k = <span class="kw">if </span>(r &amp; <span class="number">1</span>) == <span class="number">0 </span>{ r + <span class="number">1 </span>} <span class="kw">else </span>{ r - <span class="number">1 </span>};
+                <span class="kw">let </span>j = <span class="number">4 </span>+ ots_siglen + <span class="number">4 </span>+ i * m;
+                sig[j..(j + m)].copy_from_slice(<span class="kw-2">&amp;</span><span class="self">self</span>.T[k <span class="kw">as </span>usize]);
+                r = r &gt;&gt; <span class="number">1</span>;
+            }
+            <span class="prelude-val">Some</span>(sig)
+        }
+    }
+
+    <span class="kw">impl </span>PublicKey {
+
+        <span class="kw">fn </span>ots_verify(<span class="self">self</span>, q: u32, sig: <span class="kw-2">&amp;</span>[u8], msg: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Option</span>&lt;[u8; n]&gt; {
+            <span class="kw">if </span>sig.len() != ots_siglen {
+                <span class="kw">return </span><span class="prelude-val">None</span>;
+            }
+            <span class="kw">let </span>st = u32::from_be_bytes(<span class="kw-2">*</span>&lt;<span class="kw-2">&amp;</span>[u8; <span class="number">4</span>]&gt;::try_from(<span class="kw-2">&amp;</span>sig[<span class="number">0</span>..<span class="number">4</span>]).unwrap());
+            <span class="kw">if </span>st != ots_type {
+                <span class="kw">return </span><span class="prelude-val">None</span>;
+            }
+            <span class="kw">let </span>C = <span class="kw-2">&amp;</span>sig[<span class="number">4</span>..(<span class="number">4 </span>+ n)];
+            <span class="kw">let </span>yy = <span class="kw-2">&amp;</span>sig[(<span class="number">4 </span>+ n)..];
+            <span class="kw">let </span>eq = q.to_be_bytes();
+            <span class="kw">let </span>Q = Hn(<span class="kw-2">&amp;</span><span class="self">self</span>.I, <span class="kw-2">&amp;</span>eq, <span class="kw-2">&amp;</span>D_MESG, C, msg);
+            <span class="kw">let </span><span class="kw-2">mut </span>Qck = [<span class="number">0u8</span>; n + <span class="number">2</span>];
+            Qck[..n].copy_from_slice(<span class="kw-2">&amp;</span>Q);
+            Qck[n..].copy_from_slice(<span class="kw-2">&amp;</span>(checksum(<span class="kw-2">&amp;</span>Q).to_be_bytes()));
+            <span class="kw">let </span><span class="kw-2">mut </span>z = [[<span class="number">0u8</span>; n]; p];
+            <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..p {
+                <span class="kw">let </span>a = coef(<span class="kw-2">&amp;</span>Qck, i);
+                <span class="kw">let </span><span class="kw-2">mut </span>tmp = [<span class="number">0u8</span>; n];
+                tmp.copy_from_slice(<span class="kw-2">&amp;</span>yy[(i * n)..((i + <span class="number">1</span>) * n)]);
+                <span class="kw">for </span>j <span class="kw">in </span>(a <span class="kw">as </span>usize)..((<span class="number">1usize </span>&lt;&lt; w) - <span class="number">1</span>) {
+                    tmp = Hn(<span class="kw-2">&amp;</span><span class="self">self</span>.I, <span class="kw-2">&amp;</span>eq, <span class="kw-2">&amp;</span>(i <span class="kw">as </span>u16).to_be_bytes(),
+                        <span class="kw-2">&amp;</span>[j <span class="kw">as </span>u8], <span class="kw-2">&amp;</span>tmp);
+                }
+                z[i] = tmp;
+            }
+            <span class="prelude-val">Some</span>(Hnx(<span class="kw-2">&amp;</span><span class="self">self</span>.I, <span class="kw-2">&amp;</span>eq, <span class="kw-2">&amp;</span>D_PBLC, <span class="kw-2">&amp;</span>z))
+        }
+
+        <span class="kw">pub fn </span>verify(<span class="self">self</span>, sig: <span class="kw-2">&amp;</span>[u8], msg: <span class="kw-2">&amp;</span>[u8]) -&gt; bool {
+            <span class="kw">if </span>sig.len() != lms_siglen {
+                <span class="kw">return </span><span class="bool-val">false</span>;
+            }
+            <span class="kw">let </span>q = u32::from_be_bytes(<span class="kw-2">*</span>&lt;<span class="kw-2">&amp;</span>[u8; <span class="number">4</span>]&gt;::try_from(<span class="kw-2">&amp;</span>sig[<span class="number">0</span>..<span class="number">4</span>]).unwrap());
+            <span class="kw">if </span>q &gt;= (<span class="number">1u32 </span>&lt;&lt; h) {
+                <span class="kw">return </span><span class="bool-val">false</span>;
+            }
+            <span class="kw">let </span>st = u32::from_be_bytes(<span class="kw-2">*</span>&lt;<span class="kw-2">&amp;</span>[u8; <span class="number">4</span>]&gt;::try_from(<span class="kw-2">&amp;</span>sig[(ots_siglen + <span class="number">4</span>)..(ots_siglen + <span class="number">8</span>)]).unwrap());
+            <span class="kw">if </span>st != key_type {
+                <span class="kw">return </span><span class="bool-val">false</span>;
+            }
+            <span class="kw">let </span>ots_sig = <span class="kw-2">&amp;</span>sig[<span class="number">4</span>..(<span class="number">4 </span>+ ots_siglen)];
+            <span class="kw">let </span>Kc = <span class="kw">match </span><span class="self">self</span>.ots_verify(q, ots_sig, msg) {
+                <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="bool-val">false</span>,
+                <span class="prelude-val">Some</span>(kk) =&gt; kk,
+            };
+            <span class="kw">let </span><span class="kw-2">mut </span>r = (<span class="number">1u32 </span>&lt;&lt; h) + q;
+            <span class="kw">let </span><span class="kw-2">mut </span>tmp = Hm(<span class="kw-2">&amp;</span><span class="self">self</span>.I, <span class="kw-2">&amp;</span>r.to_be_bytes(), <span class="kw-2">&amp;</span>D_LEAF, <span class="kw-2">&amp;</span>Kc, <span class="kw-2">&amp;</span>Z);
+            <span class="kw">let </span>path = <span class="kw-2">&amp;</span>sig[(<span class="number">4 </span>+ ots_siglen + <span class="number">4</span>)..];
+            <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..h {
+                <span class="kw">let </span>nno = (r &amp; <span class="number">1</span>) != <span class="number">0</span>;
+                r = r &gt;&gt; <span class="number">1</span>;
+                <span class="kw">if </span>nno {
+                    tmp = Hm(<span class="kw-2">&amp;</span><span class="self">self</span>.I, <span class="kw-2">&amp;</span>r.to_be_bytes(), <span class="kw-2">&amp;</span>D_INTR,
+                        <span class="kw-2">&amp;</span>path[(i * m)..((i + <span class="number">1</span>) * m)], <span class="kw-2">&amp;</span>tmp);
+                } <span class="kw">else </span>{
+                    tmp = Hm(<span class="kw-2">&amp;</span><span class="self">self</span>.I, <span class="kw-2">&amp;</span>r.to_be_bytes(), <span class="kw-2">&amp;</span>D_INTR,
+                        <span class="kw-2">&amp;</span>tmp, <span class="kw-2">&amp;</span>path[(i * m)..((i + <span class="number">1</span>) * m)]);
+                }
+            }
+            tmp == <span class="self">self</span>.T1
+        }
+    }
+
+} } <span class="comment">// end of macro define_lms_core
+
+// ========================================================================
+
+</span><span class="attr">#[cfg(test)]
+</span><span class="macro">macro_rules!</span> define_lms_tests { () =&gt; {
+
+    <span class="kw">use super</span>::{PrivateKey};
+    <span class="kw">use crate</span>::{CryptoRng, RngCore, RngError};
+    <span class="kw">use </span>core::num::NonZeroU32;
+
+    <span class="comment">// A pretend RNG for test purposes (returns fixed values).
+    </span><span class="kw">struct </span>FRNG&lt;<span class="lifetime">'a</span>&gt; {
+        tape: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8],
+        ptr: usize,
+    }
+
+    <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; FRNG&lt;<span class="lifetime">'a</span>&gt; {
+
+        <span class="kw">fn </span>from_tape(tape: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]) -&gt; <span class="self">Self </span>{
+            <span class="self">Self </span>{ tape, ptr: <span class="number">0 </span>}
+        }
+    }
+
+    <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; RngCore <span class="kw">for </span>FRNG&lt;<span class="lifetime">'a</span>&gt; {
+
+        <span class="kw">fn </span>next_u32(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; u32 {
+            <span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0u8</span>; <span class="number">4</span>];
+            <span class="self">self</span>.fill_bytes(<span class="kw-2">&amp;mut </span>buf);
+            u32::from_le_bytes(buf)
+        }
+
+        <span class="kw">fn </span>next_u64(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; u64 {
+            <span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0u8</span>; <span class="number">8</span>];
+            <span class="self">self</span>.fill_bytes(<span class="kw-2">&amp;mut </span>buf);
+            u64::from_le_bytes(buf)
+        }
+
+        <span class="kw">fn </span>fill_bytes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dst: <span class="kw-2">&amp;mut </span>[u8]) {
+            <span class="kw">let </span>ptr = <span class="self">self</span>.ptr;
+            <span class="kw">let </span>dlen = dst.len();
+            dst.copy_from_slice(<span class="kw-2">&amp;</span><span class="self">self</span>.tape[ptr..(ptr + dlen)]);
+            <span class="self">self</span>.ptr = ptr + dlen;
+        }
+
+        <span class="kw">fn </span>try_fill_bytes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dst: <span class="kw-2">&amp;mut </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;(), RngError&gt; {
+            <span class="kw">if </span>(<span class="self">self</span>.tape.len() - <span class="self">self</span>.ptr) &lt; dst.len() {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(RngError::from(NonZeroU32::new(RngError::CUSTOM_START + <span class="number">1</span>).unwrap()));
+            }
+            <span class="self">self</span>.fill_bytes(dst);
+            <span class="prelude-val">Ok</span>(())
+        }
+    }
+
+    <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; CryptoRng <span class="kw">for </span>FRNG&lt;<span class="lifetime">'a</span>&gt; { }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>kat_lms() {
+        <span class="kw">let </span>rng_tape = hex::decode(KAT_RNG_TAPE).unwrap();
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = FRNG::from_tape(<span class="kw-2">&amp;</span>rng_tape);
+        <span class="kw">let </span><span class="kw-2">mut </span>sk = PrivateKey::generate(<span class="kw-2">&amp;mut </span>rng);
+        sk.current_leaf = KAT_LEAFNUM;
+        <span class="kw">let </span>pk = sk.compute_public();
+
+        <span class="kw">let </span>Iref = hex::decode(KAT_PK_I).unwrap();
+        <span class="kw">let </span>T1ref = hex::decode(KAT_PK_T1).unwrap();
+        <span class="macro">assert!</span>(pk.I[..] == Iref);
+        <span class="macro">assert!</span>(<span class="kw-2">&amp;</span>pk.T1[..] == T1ref);
+
+        <span class="kw">let </span>msg = hex::decode(KAT_MSG).unwrap();
+        <span class="kw">let </span>sig = sk.sign(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>msg).unwrap();
+        <span class="kw">let </span>sigref = hex::decode(KAT_SIG).unwrap();
+        <span class="macro">assert!</span>(sig[..] == sigref);
+
+        <span class="macro">assert!</span>(pk.verify(<span class="kw-2">&amp;</span>sig, <span class="kw-2">&amp;</span>msg) == <span class="bool-val">true</span>);
+        <span class="macro">assert!</span>(pk.verify(<span class="kw-2">&amp;</span>sig, <span class="kw-2">&amp;</span>msg[<span class="number">1</span>..]) == <span class="bool-val">false</span>);
+    }
+
+} } <span class="comment">// end of macro define_lms_tests
+
+// ========================================================================
+
+</span><span class="doccomment">/// LMS_SHA256_M32_H5 with LMOTS_SHA256_N32_W8
+</span><span class="kw">pub mod </span>LMS_SHA256_M32_H5_SHA256_N32_W8 {
+
+    <span class="kw">use </span>sha2::{Sha256, Digest};
+
+    <span class="macro">define_lms_core!</span>{}
+
+    <span class="kw">const </span>n: usize = <span class="number">32</span>;
+    <span class="kw">const </span>m: usize = <span class="number">32</span>;
+    <span class="kw">const </span>w: usize = <span class="number">8</span>;
+    <span class="kw">const </span>h: usize = <span class="number">5</span>;
+    <span class="kw">const </span>key_type: u32 = <span class="number">0x00000005</span>;
+    <span class="kw">const </span>ots_type: u32 = <span class="number">0x00000004</span>;
+
+    <span class="kw">fn </span>Hn(m1: <span class="kw-2">&amp;</span>[u8], m2: <span class="kw-2">&amp;</span>[u8], m3: <span class="kw-2">&amp;</span>[u8], m4: <span class="kw-2">&amp;</span>[u8], m5: <span class="kw-2">&amp;</span>[u8]) -&gt; [u8; n] {
+        <span class="kw">let </span><span class="kw-2">mut </span>sh = Sha256::new();
+        sh.update(m1);
+        sh.update(m2);
+        sh.update(m3);
+        sh.update(m4);
+        sh.update(m5);
+        <span class="kw">let </span><span class="kw-2">mut </span>r = [<span class="number">0u8</span>; n];
+        r[..].copy_from_slice(<span class="kw-2">&amp;</span>sh.finalize());
+        r
+    }
+
+    <span class="kw">fn </span>Hnx(m1: <span class="kw-2">&amp;</span>[u8], m2: <span class="kw-2">&amp;</span>[u8], m3: <span class="kw-2">&amp;</span>[u8], mm: <span class="kw-2">&amp;</span>[[u8; n]; p]) -&gt; [u8; n] {
+        <span class="kw">let </span><span class="kw-2">mut </span>sh = Sha256::new();
+        sh.update(m1);
+        sh.update(m2);
+        sh.update(m3);
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..p {
+            sh.update(<span class="kw-2">&amp;</span>mm[i]);
+        }
+        <span class="kw">let </span><span class="kw-2">mut </span>r = [<span class="number">0u8</span>; n];
+        r[..].copy_from_slice(<span class="kw-2">&amp;</span>sh.finalize());
+        r
+    }
+
+    <span class="kw">fn </span>Hm(m1: <span class="kw-2">&amp;</span>[u8], m2: <span class="kw-2">&amp;</span>[u8], m3: <span class="kw-2">&amp;</span>[u8], m4: <span class="kw-2">&amp;</span>[u8], m5: <span class="kw-2">&amp;</span>[u8]) -&gt; [u8; m] {
+        <span class="kw">let </span><span class="kw-2">mut </span>sh = Sha256::new();
+        sh.update(m1);
+        sh.update(m2);
+        sh.update(m3);
+        sh.update(m4);
+        sh.update(m5);
+        <span class="kw">let </span><span class="kw-2">mut </span>r = [<span class="number">0u8</span>; m];
+        r[..].copy_from_slice(<span class="kw-2">&amp;</span>sh.finalize());
+        r
+    }
+
+    <span class="attr">#[cfg(test)]
+    </span><span class="kw">mod </span>tests {
+
+        <span class="comment">// Test vector from RFC 8554 (appendix F, test case 2,
+        // "final signature")
+
+        </span><span class="kw">static </span>KAT_RNG_TAPE: <span class="kw-2">&amp;</span>str = <span class="string">"215f83b7ccb9acbcd08db97b0d04dc2ba1c4696e2608035a886100d05cd99945eb3370731884a8235e2fb3d4d71f25470eb1ed54a2460d512388cad533138d240534e97b1e82d33bd927d201dfc24ebb"</span>;
+        <span class="kw">static </span>KAT_PK_I: <span class="kw-2">&amp;</span>str = <span class="string">"215f83b7ccb9acbcd08db97b0d04dc2b"</span>;
+        <span class="kw">static </span>KAT_PK_T1: <span class="kw-2">&amp;</span>str = <span class="string">"a1cd035833e0e90059603f26e07ad2aad152338e7a5e5984bcd5f7bb4eba40b7"</span>;
+        <span class="kw">static </span>KAT_MSG: <span class="kw-2">&amp;</span>str = <span class="string">"54686520656e756d65726174696f6e20696e2074686520436f6e737469747574696f6e2c206f66206365727461696e207269676874732c207368616c6c206e6f7420626520636f6e73747275656420746f2064656e79206f7220646973706172616765206f74686572732072657461696e6564206279207468652070656f706c652e0a"</span>;
+        <span class="kw">static </span>KAT_LEAFNUM: u32 = <span class="number">4u32</span>;
+        <span class="kw">static </span>KAT_SIG: <span class="kw-2">&amp;</span>str =
+            <span class="string">"00000004\
+            00000004\
+            0eb1ed54a2460d512388cad533138d24\
+            0534e97b1e82d33bd927d201dfc24ebb\
+            11b3649023696f85150b189e50c00e98\
+            850ac343a77b3638319c347d7310269d\
+            3b7714fa406b8c35b021d54d4fdada7b\
+            9ce5d4ba5b06719e72aaf58c5aae7aca\
+            057aa0e2e74e7dcfd17a0823429db629\
+            65b7d563c57b4cec942cc865e29c1dad\
+            83cac8b4d61aacc457f336e6a10b6632\
+            3f5887bf3523dfcadee158503bfaa89d\
+            c6bf59daa82afd2b5ebb2a9ca6572a60\
+            67cee7c327e9039b3b6ea6a1edc7fdc3\
+            df927aade10c1c9f2d5ff446450d2a39\
+            98d0f9f6202b5e07c3f97d2458c69d3c\
+            8190643978d7a7f4d64e97e3f1c4a08a\
+            7c5bc03fd55682c017e2907eab07e5bb\
+            2f190143475a6043d5e6d5263471f4ee\
+            cf6e2575fbc6ff37edfa249d6cda1a09\
+            f797fd5a3cd53a066700f45863f04b6c\
+            8a58cfd341241e002d0d2c0217472bf1\
+            8b636ae547c1771368d9f317835c9b0e\
+            f430b3df4034f6af00d0da44f4af7800\
+            bc7a5cf8a5abdb12dc718b559b74cab9\
+            090e33cc58a955300981c420c4da8ffd\
+            67df540890a062fe40dba8b2c1c548ce\
+            d22473219c534911d48ccaabfb71bc71\
+            862f4a24ebd376d288fd4e6fb06ed870\
+            5787c5fedc813cd2697e5b1aac1ced45\
+            767b14ce88409eaebb601a93559aae89\
+            3e143d1c395bc326da821d79a9ed41dc\
+            fbe549147f71c092f4f3ac522b5cc572\
+            90706650487bae9bb5671ecc9ccc2ce5\
+            1ead87ac01985268521222fb9057df7e\
+            d41810b5ef0d4f7cc67368c90f573b1a\
+            c2ce956c365ed38e893ce7b2fae15d36\
+            85a3df2fa3d4cc098fa57dd60d2c9754\
+            a8ade980ad0f93f6787075c3f680a2ba\
+            1936a8c61d1af52ab7e21f416be09d2a\
+            8d64c3d3d8582968c2839902229f85ae\
+            e297e717c094c8df4a23bb5db658dd37\
+            7bf0f4ff3ffd8fba5e383a48574802ed\
+            545bbe7a6b4753533353d73706067640\
+            135a7ce517279cd683039747d218647c\
+            86e097b0daa2872d54b8f3e508598762\
+            9547b830d8118161b65079fe7bc59a99\
+            e9c3c7380e3e70b7138fe5d9be255150\
+            2b698d09ae193972f27d40f38dea264a\
+            0126e637d74ae4c92a6249fa103436d3\
+            eb0d4029ac712bfc7a5eacbdd7518d6d\
+            4fe903a5ae65527cd65bb0d4e9925ca2\
+            4fd7214dc617c150544e423f450c99ce\
+            51ac8005d33acd74f1bed3b17b7266a4\
+            a3bb86da7eba80b101e15cb79de9a207\
+            852cf91249ef480619ff2af8cabca831\
+            25d1faa94cbb0a03a906f683b3f47a97\
+            c871fd513e510a7a25f283b196075778\
+            496152a91c2bf9da76ebe089f4654877\
+            f2d586ae7149c406e663eadeb2b5c7e8\
+            2429b9e8cb4834c83464f079995332e4\
+            b3c8f5a72bb4b8c6f74b0d45dc6c1f79\
+            952c0b7420df525e37c15377b5f09843\
+            19c3993921e5ccd97e097592064530d3\
+            3de3afad5733cbe7703c5296263f7734\
+            2efbf5a04755b0b3c997c4328463e84c\
+            aa2de3ffdcd297baaaacd7ae646e44b5\
+            c0f16044df38fabd296a47b3a838a913\
+            982fb2e370c078edb042c84db34ce36b\
+            46ccb76460a690cc86c302457dd1cde1\
+            97ec8075e82b393d542075134e2a17ee\
+            70a5e187075d03ae3c853cff60729ba4\
+            00000005\
+            4de1f6965bdabc676c5a4dc7c35f97f8\
+            2cb0e31c68d04f1dad96314ff09e6b3d\
+            e96aeee300d1f68bf1bca9fc58e40323\
+            36cd819aaf578744e50d1357a0e42867\
+            04d341aa0a337b19fe4bc43c2e79964d\
+            4f351089f2e0e41c7c43ae0d49e7f404\
+            b0f75be80ea3af098c9752420a8ac0ea\
+            2bbb1f4eeba05238aef0d8ce63f0c6e5\
+            e4041d95398a6f7f3e0ee97cc1591849\
+            d4ed236338b147abde9f51ef9fd4e1c1"</span>;
+
+        <span class="macro">define_lms_tests!</span>{}
+    }
+}
+
+<span class="doccomment">/// LMS_SHA256_M24_H5 with LMOTS_SHA256_N24_W8
+</span><span class="kw">pub mod </span>LMS_SHA256_M24_H5_SHA256_N24_W8 {
+
+    <span class="kw">use </span>sha2::{Sha256, Digest};
+
+    <span class="macro">define_lms_core!</span>{}
+
+    <span class="kw">const </span>n: usize = <span class="number">24</span>;
+    <span class="kw">const </span>m: usize = <span class="number">24</span>;
+    <span class="kw">const </span>w: usize = <span class="number">8</span>;
+    <span class="kw">const </span>h: usize = <span class="number">5</span>;
+    <span class="kw">const </span>key_type: u32 = <span class="number">0x0000000a</span>;
+    <span class="kw">const </span>ots_type: u32 = <span class="number">0x00000008</span>;
+
+    <span class="kw">fn </span>Hn(m1: <span class="kw-2">&amp;</span>[u8], m2: <span class="kw-2">&amp;</span>[u8], m3: <span class="kw-2">&amp;</span>[u8], m4: <span class="kw-2">&amp;</span>[u8], m5: <span class="kw-2">&amp;</span>[u8]) -&gt; [u8; n] {
+        <span class="kw">let </span><span class="kw-2">mut </span>sh = Sha256::new();
+        sh.update(m1);
+        sh.update(m2);
+        sh.update(m3);
+        sh.update(m4);
+        sh.update(m5);
+        <span class="kw">let </span><span class="kw-2">mut </span>r = [<span class="number">0u8</span>; n];
+        r[..].copy_from_slice(<span class="kw-2">&amp;</span>sh.finalize()[..<span class="number">24</span>]);
+        r
+    }
+
+    <span class="kw">fn </span>Hnx(m1: <span class="kw-2">&amp;</span>[u8], m2: <span class="kw-2">&amp;</span>[u8], m3: <span class="kw-2">&amp;</span>[u8], mm: <span class="kw-2">&amp;</span>[[u8; n]; p]) -&gt; [u8; n] {
+        <span class="kw">let </span><span class="kw-2">mut </span>sh = Sha256::new();
+        sh.update(m1);
+        sh.update(m2);
+        sh.update(m3);
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..p {
+            sh.update(<span class="kw-2">&amp;</span>mm[i]);
+        }
+        <span class="kw">let </span><span class="kw-2">mut </span>r = [<span class="number">0u8</span>; n];
+        r[..].copy_from_slice(<span class="kw-2">&amp;</span>sh.finalize()[..<span class="number">24</span>]);
+        r
+    }
+
+    <span class="kw">fn </span>Hm(m1: <span class="kw-2">&amp;</span>[u8], m2: <span class="kw-2">&amp;</span>[u8], m3: <span class="kw-2">&amp;</span>[u8], m4: <span class="kw-2">&amp;</span>[u8], m5: <span class="kw-2">&amp;</span>[u8]) -&gt; [u8; m] {
+        <span class="kw">let </span><span class="kw-2">mut </span>sh = Sha256::new();
+        sh.update(m1);
+        sh.update(m2);
+        sh.update(m3);
+        sh.update(m4);
+        sh.update(m5);
+        <span class="kw">let </span><span class="kw-2">mut </span>r = [<span class="number">0u8</span>; m];
+        r[..].copy_from_slice(<span class="kw-2">&amp;</span>sh.finalize()[..<span class="number">24</span>]);
+        r
+    }
+
+    <span class="attr">#[cfg(test)]
+    </span><span class="kw">mod </span>tests {
+
+        <span class="comment">// Test vector from draft-fluhrer-lms-more-parm-sets-09.txt
+        // ("Test Case 1")
+
+        </span><span class="kw">static </span>KAT_RNG_TAPE: <span class="kw-2">&amp;</span>str = <span class="string">"202122232425262728292a2b2c2d2e2f000102030405060708090a0b0c0d0e0f10111213141516170b5040a18c1b5cabcbc85b047402ec6294a30dd8da8fc3da"</span>;
+        <span class="kw">static </span>KAT_PK_I: <span class="kw-2">&amp;</span>str = <span class="string">"202122232425262728292a2b2c2d2e2f"</span>;
+        <span class="kw">static </span>KAT_PK_T1: <span class="kw-2">&amp;</span>str = <span class="string">"2c571450aed99cfb4f4ac285da14882796618314508b12d2"</span>;
+        <span class="kw">static </span>KAT_MSG: <span class="kw-2">&amp;</span>str = <span class="string">"54657374206d65737361676520666f72205348413235362d3139320a"</span>;
+        <span class="kw">static </span>KAT_LEAFNUM: u32 = <span class="number">5u32</span>;
+        <span class="kw">static </span>KAT_SIG: <span class="kw-2">&amp;</span>str =
+            <span class="string">"00000005\
+            00000008\
+            0b5040a18c1b5cabcbc85b047402ec62\
+            94a30dd8da8fc3da\
+            e13b9f0875f09361dc77fcc4481ea463\
+            c073716249719193\
+            614b835b4694c059f12d3aedd34f3db9\
+            3f3580fb88743b8b\
+            3d0648c0537b7a50e433d7ea9d6672ff\
+            fc5f42770feab4f9\
+            8eb3f3b23fd2061e4d0b38f832860ae7\
+            6673ad1a1a52a900\
+            5dcf1bfb56fe16ff723627612f9a48f7\
+            90f3c47a67f870b8\
+            1e919d99919c8db48168838cece0abfb\
+            683da48b9209868b\
+            e8ec10c63d8bf80d36498dfc205dc45d\
+            0dd870572d6d8f1d\
+            90177cf5137b8bbf7bcb67a46f86f26c\
+            fa5a44cbcaa4e18d\
+            a099a98b0b3f96d5ac8ac375d8da2a7c\
+            248004ba11d7ac77\
+            5b9218359cddab4cf8ccc6d54cb7e1b3\
+            5a36ddc9265c0870\
+            63d2fc6742a7177876476a324b03295b\
+            fed99f2eaf1f3897\
+            0583c1b2b616aad0f31cd7a4b1bb0a51\
+            e477e94a01bbb4d6\
+            f8866e2528a159df3d6ce244d2b6518d\
+            1f0212285a3c2d4a\
+            927054a1e1620b5b02aab0c8c10ed48a\
+            e518ea73cba81fcf\
+            ff88bff461dac51e7ab4ca75f47a6259\
+            d24820b9995792d1\
+            39f61ae2a8186ae4e3c9bfe0af2cc717\
+            f424f41aa67f03fa\
+            edb0665115f2067a46843a4cbbd297d5\
+            e83bc1aafc18d1d0\
+            3b3d894e8595a6526073f02ab0f08b99\
+            fd9eb208b59ff631\
+            7e5545e6f9ad5f9c183abd043d5acd6e\
+            b2dd4da3f02dbc31\
+            67b468720a4b8b92ddfe7960998bb7a0\
+            ecf2a26a37598299\
+            413f7b2aecd39a30cec527b4d9710c44\
+            73639022451f50d0\
+            1c0457125da0fa4429c07dad859c846c\
+            bbd93ab5b91b01bc\
+            770b089cfede6f651e86dd7c15989c8b\
+            5321dea9ca608c71\
+            fd862323072b827cee7a7e28e4e2b999\
+            647233c3456944bb\
+            7aef9187c96b3f5b79fb98bc76c3574d\
+            d06f0e95685e5b3a\
+            ef3a54c4155fe3ad817749629c30adbe\
+            897c4f4454c86c49\
+            0000000a\
+            e9ca10eaa811b22ae07fb195e3590a33\
+            4ea64209942fbae3\
+            38d19f152182c807d3c40b189d3fcbea\
+            942f44682439b191\
+            332d33ae0b761a2a8f984b56b2ac2fd4\
+            ab08223a69ed1f77\
+            19c7aa7e9eee96504b0e60c6bb5c942d\
+            695f0493eb25f80a\
+            5871cffd131d0e04ffe5065bc7875e82\
+            d34b40b69dd9f3c1"</span>;
+
+        <span class="macro">define_lms_tests!</span>{}
+    }
+}
+
+<span class="doccomment">/// LMS_SHAKE_M24_H5 with LMOTS_SHAKE_N24_W8
+</span><span class="kw">pub mod </span>LMS_SHAKE_M24_H5_SHAKE_N24_W8 {
+
+    <span class="kw">use </span>sha3::{Shake256, digest::{Update, ExtendableOutput, XofReader}};
+
+    <span class="macro">define_lms_core!</span>{}
+
+    <span class="kw">const </span>n: usize = <span class="number">24</span>;
+    <span class="kw">const </span>m: usize = <span class="number">24</span>;
+    <span class="kw">const </span>w: usize = <span class="number">8</span>;
+    <span class="kw">const </span>h: usize = <span class="number">5</span>;
+    <span class="kw">const </span>key_type: u32 = <span class="number">0x00000014</span>;
+    <span class="kw">const </span>ots_type: u32 = <span class="number">0x00000010</span>;
+
+    <span class="kw">fn </span>Hn(m1: <span class="kw-2">&amp;</span>[u8], m2: <span class="kw-2">&amp;</span>[u8], m3: <span class="kw-2">&amp;</span>[u8], m4: <span class="kw-2">&amp;</span>[u8], m5: <span class="kw-2">&amp;</span>[u8]) -&gt; [u8; n] {
+        <span class="kw">let </span><span class="kw-2">mut </span>sh = Shake256::default();
+        sh.update(m1);
+        sh.update(m2);
+        sh.update(m3);
+        sh.update(m4);
+        sh.update(m5);
+        <span class="kw">let </span><span class="kw-2">mut </span>r = [<span class="number">0u8</span>; n];
+        sh.finalize_xof().read(<span class="kw-2">&amp;mut </span>r);
+        r
+    }
+
+    <span class="kw">fn </span>Hnx(m1: <span class="kw-2">&amp;</span>[u8], m2: <span class="kw-2">&amp;</span>[u8], m3: <span class="kw-2">&amp;</span>[u8], mm: <span class="kw-2">&amp;</span>[[u8; n]; p]) -&gt; [u8; n] {
+        <span class="kw">let </span><span class="kw-2">mut </span>sh = Shake256::default();
+        sh.update(m1);
+        sh.update(m2);
+        sh.update(m3);
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..p {
+            sh.update(<span class="kw-2">&amp;</span>mm[i]);
+        }
+        <span class="kw">let </span><span class="kw-2">mut </span>r = [<span class="number">0u8</span>; n];
+        sh.finalize_xof().read(<span class="kw-2">&amp;mut </span>r);
+        r
+    }
+
+    <span class="kw">fn </span>Hm(m1: <span class="kw-2">&amp;</span>[u8], m2: <span class="kw-2">&amp;</span>[u8], m3: <span class="kw-2">&amp;</span>[u8], m4: <span class="kw-2">&amp;</span>[u8], m5: <span class="kw-2">&amp;</span>[u8]) -&gt; [u8; m] {
+        <span class="kw">let </span><span class="kw-2">mut </span>sh = Shake256::default();
+        sh.update(m1);
+        sh.update(m2);
+        sh.update(m3);
+        sh.update(m4);
+        sh.update(m5);
+        <span class="kw">let </span><span class="kw-2">mut </span>r = [<span class="number">0u8</span>; m];
+        sh.finalize_xof().read(<span class="kw-2">&amp;mut </span>r);
+        r
+    }
+
+    <span class="attr">#[cfg(test)]
+    </span><span class="kw">mod </span>tests {
+
+        <span class="comment">// Test vector from draft-fluhrer-lms-more-parm-sets-09.txt
+        // ("Test Case 2")
+
+        </span><span class="kw">static </span>KAT_RNG_TAPE: <span class="kw-2">&amp;</span>str = <span class="string">"505152535455565758595a5b5c5d5e5f303132333435363738393a3b3c3d3e3f404142434445464784219da9ce9fffb16edb94527c6d10565587db28062deac4"</span>;
+        <span class="kw">static </span>KAT_PK_I: <span class="kw-2">&amp;</span>str = <span class="string">"505152535455565758595a5b5c5d5e5f"</span>;
+        <span class="kw">static </span>KAT_PK_T1: <span class="kw-2">&amp;</span>str = <span class="string">"db54a4509901051c01e26d9990e550347986da87924ff0b1"</span>;
+        <span class="kw">static </span>KAT_MSG: <span class="kw-2">&amp;</span>str = <span class="string">"54657374206d65737361676520666f72205348414b453235362d3139320a"</span>;
+        <span class="kw">static </span>KAT_LEAFNUM: u32 = <span class="number">6u32</span>;
+        <span class="kw">static </span>KAT_SIG: <span class="kw-2">&amp;</span>str =
+            <span class="string">"00000006\
+            00000010\
+            84219da9ce9fffb16edb94527c6d1056\
+            5587db28062deac4\
+            208e62fc4fbe9d85deb3c6bd2c01640a\
+            ccb387d8a6093d68\
+            511234a6a1a50108091c034cb1777e02\
+            b5df466149a66969\
+            a498e4200c0a0c1bf5d100cdb97d2dd4\
+            0efd3cada278acc5\
+            a570071a043956112c6deebd1eb3a7b5\
+            6f5f6791515a7b5f\
+            fddb0ec2d9094bfbc889ea15c3c7b9be\
+            a953efb75ed648f5\
+            35b9acab66a2e9631e426e4e99b733ca\
+            a6c55963929b77fe\
+            c54a7e703d8162e736875cb6a455d4a9\
+            015c7a6d8fd5fe75\
+            e402b47036dc3770f4a1dd0a559cb478\
+            c7fb1726005321be\
+            9d1ac2de94d731ee4ca79cff454c811f\
+            46d11980909f047b\
+            2005e84b6e15378446b1ca691efe491e\
+            a98acc9d3c0f785c\
+            aba5e2eb3c306811c240ba2280292382\
+            7d582639304a1e97\
+            83ba5bc9d69d999a7db8f749770c3c04\
+            a152856dc726d806\
+            7921465b61b3f847b13b2635a45379e5\
+            adc6ff58a99b00e6\
+            0ac767f7f30175f9f7a140257e218be3\
+            07954b1250c9b419\
+            02c4fa7c90d8a592945c66e86a76defc\
+            b84500b55598a199\
+            0faaa10077c74c94895731585c8f900d\
+            e1a1c675bd8b0c18\
+            0ebe2b5eb3ef8019ece3e1ea7223eb79\
+            06a2042b6262b4aa\
+            25c4b8a05f205c8befeef11ceff12825\
+            08d71bc2a8cfa0a9\
+            9f73f3e3a74bb4b3c0d8ca2abd0e1c2c\
+            17dafe18b4ee2298\
+            e87bcfb1305b3c069e6d385569a4067e\
+            d547486dd1a50d6f\
+            4a58aab96e2fa883a9a39e1bd45541ee\
+            e94efc32faa9a94b\
+            e66dc8538b2dab05aee5efa6b3b2efb3\
+            fd020fe789477a93\
+            afff9a3e636dbba864a5bffa3e28d13d\
+            49bb597d94865bde\
+            88c4627f206ab2b465084d6b780666e9\
+            52f8710efd748bd0\
+            f1ae8f1035087f5028f14affcc5fffe3\
+            32121ae4f87ac5f1\
+            eac9062608c7d87708f1723f38b23237\
+            a4edf4b49a5cd3d7\
+            00000014\
+            dd4bdc8f928fb526f6fb7cdb944a7eba\
+            a7fb05d995b5721a\
+            27096a5007d82f79d063acd434a04e97\
+            f61552f7f81a9317\
+            b4ec7c87a5ed10c881928fc6ebce6dfc\
+            e9daae9cc9dba690\
+            7ca9a9dd5f9f573704d5e6cf22a43b04\
+            e64c1ffc7e1c442e\
+            cb495ba265f465c56291a902e62a461f\
+            6dfda232457fad14"</span>;
+
+        <span class="macro">define_lms_tests!</span>{}
+    }
+}
+
+<span class="doccomment">/// LMS_SHAKE_M32_H5 with LMOTS_SHAKE_N32_W8
+</span><span class="kw">pub mod </span>LMS_SHAKE_M32_H5_SHAKE_N32_W8 {
+
+    <span class="kw">use </span>sha3::{Shake256, digest::{Update, ExtendableOutput, XofReader}};
+
+    <span class="macro">define_lms_core!</span>{}
+
+    <span class="kw">const </span>n: usize = <span class="number">32</span>;
+    <span class="kw">const </span>m: usize = <span class="number">32</span>;
+    <span class="kw">const </span>w: usize = <span class="number">8</span>;
+    <span class="kw">const </span>h: usize = <span class="number">5</span>;
+    <span class="kw">const </span>key_type: u32 = <span class="number">0x0000000f</span>;
+    <span class="kw">const </span>ots_type: u32 = <span class="number">0x0000000c</span>;
+
+    <span class="kw">fn </span>Hn(m1: <span class="kw-2">&amp;</span>[u8], m2: <span class="kw-2">&amp;</span>[u8], m3: <span class="kw-2">&amp;</span>[u8], m4: <span class="kw-2">&amp;</span>[u8], m5: <span class="kw-2">&amp;</span>[u8]) -&gt; [u8; n] {
+        <span class="kw">let </span><span class="kw-2">mut </span>sh = Shake256::default();
+        sh.update(m1);
+        sh.update(m2);
+        sh.update(m3);
+        sh.update(m4);
+        sh.update(m5);
+        <span class="kw">let </span><span class="kw-2">mut </span>r = [<span class="number">0u8</span>; n];
+        sh.finalize_xof().read(<span class="kw-2">&amp;mut </span>r);
+        r
+    }
+
+    <span class="kw">fn </span>Hnx(m1: <span class="kw-2">&amp;</span>[u8], m2: <span class="kw-2">&amp;</span>[u8], m3: <span class="kw-2">&amp;</span>[u8], mm: <span class="kw-2">&amp;</span>[[u8; n]; p]) -&gt; [u8; n] {
+        <span class="kw">let </span><span class="kw-2">mut </span>sh = Shake256::default();
+        sh.update(m1);
+        sh.update(m2);
+        sh.update(m3);
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..p {
+            sh.update(<span class="kw-2">&amp;</span>mm[i]);
+        }
+        <span class="kw">let </span><span class="kw-2">mut </span>r = [<span class="number">0u8</span>; n];
+        sh.finalize_xof().read(<span class="kw-2">&amp;mut </span>r);
+        r
+    }
+
+    <span class="kw">fn </span>Hm(m1: <span class="kw-2">&amp;</span>[u8], m2: <span class="kw-2">&amp;</span>[u8], m3: <span class="kw-2">&amp;</span>[u8], m4: <span class="kw-2">&amp;</span>[u8], m5: <span class="kw-2">&amp;</span>[u8]) -&gt; [u8; m] {
+        <span class="kw">let </span><span class="kw-2">mut </span>sh = Shake256::default();
+        sh.update(m1);
+        sh.update(m2);
+        sh.update(m3);
+        sh.update(m4);
+        sh.update(m5);
+        <span class="kw">let </span><span class="kw-2">mut </span>r = [<span class="number">0u8</span>; m];
+        sh.finalize_xof().read(<span class="kw-2">&amp;mut </span>r);
+        r
+    }
+
+    <span class="attr">#[cfg(test)]
+    </span><span class="kw">mod </span>tests {
+
+        <span class="comment">// Test vector from draft-fluhrer-lms-more-parm-sets-09.txt
+        // ("Test Case 3")
+
+        </span><span class="kw">static </span>KAT_RNG_TAPE: <span class="kw-2">&amp;</span>str = <span class="string">"808182838485868788898a8b8c8d8e8f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7fb82709f0f00e83759190996233d1ee4f4ec50534473c02ffa145e8ca2874e32b"</span>;
+        <span class="kw">static </span>KAT_PK_I: <span class="kw-2">&amp;</span>str = <span class="string">"808182838485868788898a8b8c8d8e8f"</span>;
+        <span class="kw">static </span>KAT_PK_T1: <span class="kw-2">&amp;</span>str = <span class="string">"9bb7faee411cae806c16a466c3191a8b65d0ac31932bbf0c2d07c7a4a36379fe"</span>;
+        <span class="kw">static </span>KAT_MSG: <span class="kw-2">&amp;</span>str = <span class="string">"54657374206d657361676520666f72205348414b453235362d3235360a"</span>;
+        <span class="kw">static </span>KAT_LEAFNUM: u32 = <span class="number">7u32</span>;
+        <span class="kw">static </span>KAT_SIG: <span class="kw-2">&amp;</span>str =
+            <span class="string">"00000007\
+            0000000c\
+            b82709f0f00e83759190996233d1ee4f\
+            4ec50534473c02ffa145e8ca2874e32b\
+            16b228118c62b96c9c77678b33183730\
+            debaade8fe607f05c6697bc971519a34\
+            1d69c00129680b67e75b3bd7d8aa5c8b\
+            71f02669d177a2a0eea896dcd1660f16\
+            864b302ff321f9c4b8354408d0676050\
+            4f768ebd4e545a9b0ac058c575078e6c\
+            1403160fb45450d61a9c8c81f6bd69bd\
+            fa26a16e12a265baf79e9e233eb71af6\
+            34ecc66dc88e10c6e0142942d4843f70\
+            a0242727bc5a2aabf7b0ec12a99090d8\
+            caeef21303f8ac58b9f200371dc9e41a\
+            b956e1a3efed9d4bbb38975b46c28d5f\
+            5b3ed19d847bd0a737177263cbc1a226\
+            2d40e80815ee149b6cce2714384c9b7f\
+            ceb3bbcbd25228dda8306536376f8793\
+            ecadd6020265dab9075f64c773ef97d0\
+            7352919995b74404cc69a6f3b469445c\
+            9286a6b2c9f6dc839be76618f053de76\
+            3da3571ef70f805c9cc54b8e501a98b9\
+            8c70785eeb61737eced78b0e380ded4f\
+            769a9d422786def59700eef3278017ba\
+            bbe5f9063b468ae0dd61d94f9f99d5cc\
+            36fbec4178d2bda3ad31e1644a2bcce2\
+            08d72d50a7637851aa908b94dc437612\
+            0d5beab0fb805e1945c41834dd6085e6\
+            db1a3aa78fcb59f62bde68236a10618c\
+            ff123abe64dae8dabb2e84ca705309c2\
+            ab986d4f8326ba0642272cb3904eb96f\
+            6f5e3bb8813997881b6a33cac0714e4b\
+            5e7a882ad87e141931f97d612b84e903\
+            e773139ae377f5ba19ac86198d485fca\
+            97742568f6ff758120a89bf19059b8a6\
+            bfe2d86b12778164436ab2659ba86676\
+            7fcc435584125fb7924201ee67b535da\
+            f72c5cb31f5a0b1d926324c26e67d4c3\
+            836e301aa09bae8fb3f91f1622b1818c\
+            cf440f52ca9b5b9b99aba8a6754aae2b\
+            967c4954fa85298ad9b1e74f27a46127\
+            c36131c8991f0cc2ba57a15d35c91cf8\
+            bc48e8e20d625af4e85d8f9402ec44af\
+            bd4792b924b839332a64788a7701a300\
+            94b9ec4b9f4b648f168bf457fbb3c959\
+            4fa87920b645e42aa2fecc9e21e000ca\
+            7d3ff914e15c40a8bc533129a7fd3952\
+            9376430f355aaf96a0a13d13f2419141\
+            b3cc25843e8c90d0e551a355dd90ad77\
+            0ea7255214ce11238605de2f000d2001\
+            04d0c3a3e35ae64ea10a3eff37ac7e95\
+            49217cdf52f307172e2f6c7a2a4543e1\
+            4314036525b1ad53eeaddf0e24b1f369\
+            14ed22483f2889f61e62b6fb78f5645b\
+            dbb02c9e5bf97db7a0004e87c2a55399\
+            b61958786c97bd52fa199c27f6bb4d68\
+            c4907933562755bfec5d4fb52f06c289\
+            d6e852cf6bc773ffd4c07ee2d6cc55f5\
+            7edcfbc8e8692a49ad47a121fe3c1b16\
+            cab1cc285faf6793ffad7a8c341a49c5\
+            d2dce7069e464cb90a00b2903648b23c\
+            81a68e21d748a7e7b1df8a593f3894b2\
+            477e8316947ca725d141135202a9442e\
+            1db33bbd390d2c04401c39b253b78ce2\
+            97b0e14755e46ec08a146d279c67af70\
+            de256890804d83d6ec5ca3286f1fca9c\
+            72abf6ef868e7f6eb0fddda1b040ecec\
+            9bbc69e2fd8618e9db3bdb0af13dda06\
+            c6617e95afa522d6a2552de15324d991\
+            19f55e9af11ae3d5614b564c642dbfec\
+            6c644198ce80d2433ac8ee738f9d825e\
+            0000000f\
+            71d585a35c3a908379f4072d070311db\
+            5d65b242b714bc5a756ba5e228abfa0d\
+            1329978a05d5e815cf4d74c1e547ec4a\
+            a3ca956ae927df8b29fb9fab3917a7a4\
+            ae61ba57e5342e9db12caf6f6dbc5253\
+            de5268d4b0c4ce4ebe6852f012b162fc\
+            1c12b9ffc3bcb1d3ac8589777655e22c\
+            d9b99ff1e4346fd0efeaa1da044692e7\
+            ad6bfc337db69849e54411df8920c228\
+            a2b7762c11e4b1c49efb74486d3931ea"</span>;
+
+        <span class="macro">define_lms_tests!</span>{}
+    }
+}
+</code></pre></div></section></main></body></html>

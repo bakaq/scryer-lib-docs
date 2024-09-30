@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Jq255e implementation."><title>crrl::jq255e - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="crrl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.1 (3f5fd8dd4 2024-08-06)" data-channel="1.80.1" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../crrl/index.html">crrl</a><span class="version">0.9.0</span></h2></div><h2 class="location"><a href="#">Module jq255e</a></h2><div class="sidebar-elems"><section><ul class="block"><li><a href="#structs">Structs</a></li><li><a href="#types">Type Aliases</a></li></ul></section><h2><a href="../index.html">In crate crrl</a></h2></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Module <a href="../index.html">crrl</a>::<wbr><a class="mod" href="#">jq255e</a><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><span class="out-of-band"><a class="src" href="../../src/crrl/jq255e.rs.html#1-3446">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Jq255e implementation.</p>
+<p>This module implements generic group operations on the jq255e
+group, which is itself isomorphic to a subgroup of the
+double-odd elliptic curve of equation <code>y^2 = x*(x^2 - 2)</code> over
+the finite field GF(2^255 - 18651). This group is described
+on the <a href="https://doubleodd.group/">double-odd site</a>. The group has a prime order order <code>r</code>
+(an integer slightly below 2^254). A conventional base point is
+defined; like all non-neutral elements in a prime order group, it
+generates the whole group.</p>
+<p>A group element is represented by the <code>Point</code> structure. Group
+elements are called “points” because they are internally represented
+by points on an elliptic curve; however, the <code>Point</code> structure, by
+construction, contains only proper representatives of the group
+element, not just any point. <code>Point</code> instances can be used in
+additions and subtractions with the usual <code>+</code> and <code>-</code> operators; all
+combinations of raw values and references are accepted, as well as
+compound assignment operators <code>+=</code> and <code>-=</code>. Specialized functions
+are available, in particular for point doubling (<code>Point::double()</code>)
+and for sequences of successive doublings (<code>Point::xdouble()</code>), the
+latter using some extra optimizations. Multiplication by an integer
+(<code>u64</code> type) or a scalar (<code>Scalar</code> structure) is also accepted, using
+the <code>*</code> and <code>*=</code> operators. Scalars are integers modulo <code>r</code>. The
+<code>Scalar</code> structure represents such a value; it implements all usual
+arithmetic operators (<code>+</code>, <code>-</code>, <code>*</code> and <code>/</code>, as well as <code>+=</code>, <code>-=</code>,
+<code>*=</code> and <code>/=</code>).</p>
+<p>Scalars can be encoded over 32 bytes (using unsigned little-endian
+convention) and decoded back. Encoding is always canonical, and
+decoding always verifies that the value is indeed in the canonical
+range.</p>
+<p>Points can be encoded over 32 bytes, and decoded back. As with
+scalars, encoding is always canonical, and verified upon decoding.
+Point encoding uses only 255 bits; the top bit (most significant bit
+of the last byte) is always zero. The decoding process verifies that
+the top bit is indeed zero.</p>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="struct" href="struct.Point.html" title="struct crrl::jq255e::Point">Point</a></div><div class="desc docblock-short">An element in the jq255e group.</div></li><li><div class="item-name"><a class="struct" href="struct.PrivateKey.html" title="struct crrl::jq255e::PrivateKey">PrivateKey</a></div><div class="desc docblock-short">A jq255e private key.</div></li><li><div class="item-name"><a class="struct" href="struct.PublicKey.html" title="struct crrl::jq255e::PublicKey">PublicKey</a></div><div class="desc docblock-short">A jq255e public key.</div></li></ul><h2 id="types" class="section-header">Type Aliases<a href="#types" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="type" href="type.Scalar.html" title="type crrl::jq255e::Scalar">Scalar</a></div><div class="desc docblock-short">Integers modulo r = 2^254 - 131528281291764213006042413802501683931.</div></li></ul></section></div></main></body></html>

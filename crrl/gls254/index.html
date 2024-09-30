@@ -1,0 +1,55 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="GLS254 implementation."><title>crrl::gls254 - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="crrl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.1 (3f5fd8dd4 2024-08-06)" data-channel="1.80.1" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../crrl/index.html">crrl</a><span class="version">0.9.0</span></h2></div><h2 class="location"><a href="#">Module gls254</a></h2><div class="sidebar-elems"><section><ul class="block"><li><a href="#structs">Structs</a></li><li><a href="#types">Type Aliases</a></li></ul></section><h2><a href="../index.html">In crate crrl</a></h2></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Module <a href="../index.html">crrl</a>::<wbr><a class="mod" href="#">gls254</a><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><span class="out-of-band"><a class="src" href="../../src/crrl/gls254.rs.html#1-5083">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>GLS254 implementation.</p>
+<p>This module implements generic group operations on a prime-order group
+backed by the GLS254 elliptic curve. That curve is formally defined
+over GF(2^254), a finite field itself defined as a degree-2 extensionm
+over GF(2^127). We follow the initial parameters used in some previous
+papers, in particular: <a href="https://eprint.iacr.org/2022/748">https://eprint.iacr.org/2022/748</a></p>
+<p>Field GF(2^127) is the quotient <code>GF(2)[z]/(1 + z^63 + z^127)</code>.
+We then define GF(2^254) as <code>GF(2^127)[u]/(1 + u + u^2)</code>. This is
+the base field for curve point coordinates. Elements of GF(2^254) are
+represented as combinations <code>x0 + x1*u</code> for <code>x0</code> and <code>x1</code> both in
+GF(2^127). The types <code>GFb127</code> and <code>GFb254</code> implement these fields.</p>
+<p>The GLS254 curve equation is <code>Y^2 + X*Y = X^3 + A*X^2 + B</code> with
+<code>A = u</code> and <code>B = 1 + z^27</code> (<code>B</code> is part of GF(2^127)). Its order is
+<code>2*r</code> for prime <code>r = 2^253 + 83877821160623817322862211711964450037</code>.</p>
+<p>We map this curve using a bijective isogeny: <code>x = X^4</code> and
+<code>y = Y^4 + B^2</code>. This transforms the curve equation into
+<code>y^2 + x*y = x^3 + a*x^2 + b*x</code>, with <code>a = A^4 = u</code> and
+<code>b = B^2 = 1 + z^54</code>. Since the isogeny preserves the group structure
+and is efficiently computable in both direction, this new curve is
+fully equivalent, from a security point of view, to the original
+GLS254. We can then apply the representations and formulas from:
+<a href="https://eprint.iacr.org/2022/1325">https://eprint.iacr.org/2022/1325</a></p>
+<p>Group elements are curve points <code>P+N</code>, where <code>N = (0,0)</code> is the
+unique point of order 2 on the curve, and <code>P</code> is any <code>r</code>-torsion point.
+<code>N</code> is the group neutral. The sum (in the group) of <code>P+N</code> and <code>Q+N</code>
+is <code>P+Q+N</code>. <code>(x,s)</code> coordinates are used, with <code>s = y + x^2 + a*x + b</code>.
+The formulas for such operations are efficient and complete (no special
+case). A group element can be encoded canonically into a field element
+<code>w = sqrt(s/x)</code> (the neutral <code>N</code> is encoded as zero); the decoding
+process ensures that the input is valid and canonical. Field elements
+are serialized to sequences of 32 bytes:</p>
+<ul>
+<li>
+<p>For an element <code>x = \sum_{i=0}^{126} x_i z^i</code> of GF(2^127), we
+define the integer <code>vx = \sum_{i=0}^{126} x_i 2^i</code>, which we
+serialize into exactly 16 bytes with the unsigned little-endian
+conventions (the most significant bit of the 16th byte is then
+always 0).</p>
+</li>
+<li>
+<p>For an element <code>x = x0 + x1*u</code> of GF(2^254), with <code>x0</code> and <code>x1</code>
+being elements of GF(2^127), the serialization f <code>x</code> is the
+concatenation of the serializations of <code>x0</code> and <code>x1</code>, in that
+order, for a total of of 32 bytes.</p>
+</li>
+</ul>
+<p>The most significant bit of byte 15 and the most significant bit of
+byte 31 are both always zero. The deserialization process checks that
+these bits are indeed zero, and rejects the input otherwise. Provided
+that these bits are both zero, then the input can always be decoded into
+an element of GF(2^254). About half of the elements of GF(2^254) can
+be then decoded into a valid group element; the decoding process rejects
+invalid inputs. A field element can be decoded into at most a single
+group element; decoding is unambiguous.</p>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="struct" href="struct.Point.html" title="struct crrl::gls254::Point">Point</a></div><div class="desc docblock-short">An element of the GLS254 group.</div></li><li><div class="item-name"><a class="struct" href="struct.PrivateKey.html" title="struct crrl::gls254::PrivateKey">PrivateKey</a></div><div class="desc docblock-short">A GLS254 private key.</div></li><li><div class="item-name"><a class="struct" href="struct.PublicKey.html" title="struct crrl::gls254::PublicKey">PublicKey</a></div><div class="desc docblock-short">A GLS254 public key.</div></li></ul><h2 id="types" class="section-header">Type Aliases<a href="#types" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="type" href="type.Scalar.html" title="type crrl::gls254::Scalar">Scalar</a></div><div class="desc docblock-short">Integers modulo r = 2^253 + 83877821160623817322862211711964450037.</div></li></ul></section></div></main></body></html>

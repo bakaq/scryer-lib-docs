@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"scraper":[["impl <a class=\"trait\" href=\"markup5ever/serialize/trait.Serialize.html\" title=\"trait markup5ever::serialize::Serialize\">Serialize</a> for <a class=\"struct\" href=\"scraper/html/struct.Html.html\" title=\"struct scraper::html::Html\">Html</a>"],["impl&lt;'a&gt; <a class=\"trait\" href=\"markup5ever/serialize/trait.Serialize.html\" title=\"trait markup5ever::serialize::Serialize\">Serialize</a> for <a class=\"struct\" href=\"scraper/element_ref/struct.ElementRef.html\" title=\"struct scraper::element_ref::ElementRef\">ElementRef</a>&lt;'a&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["Commitment","Coordinator","GroupPrivateKey","GroupPublicKey","KeySplitter","Nonce","Signature","SignatureShare","SignerPrivateKeyShare","SignerPublicKey","VSSElement"]};

@@ -1,0 +1,88 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Edwards25519 curve implementation."><title>crrl::ed25519 - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="crrl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.1 (3f5fd8dd4 2024-08-06)" data-channel="1.80.1" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../crrl/index.html">crrl</a><span class="version">0.9.0</span></h2></div><h2 class="location"><a href="#">Module ed25519</a></h2><div class="sidebar-elems"><section><ul class="block"><li><a href="#structs">Structs</a></li><li><a href="#types">Type Aliases</a></li></ul></section><h2><a href="../index.html">In crate crrl</a></h2></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Module <a href="../index.html">crrl</a>::<wbr><a class="mod" href="#">ed25519</a><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><span class="out-of-band"><a class="src" href="../../src/crrl/ed25519.rs.html#1-8730">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Edwards25519 curve implementation.</p>
+<p>This module implements generic group operations on the twisted
+Edwards curve of equation <code>-x^2 + y^2 = 1 + d*x^2*y^2</code>, over the
+finite field GF(2^255 - 19), for the constant <code>d</code> = -121665/121666.
+This curve is described in <a href="https://datatracker.ietf.org/doc/html/rfc7748">RFC 7748</a>. The signature algorithm
+Ed25519, which operates on that curve, is described in <a href="https://datatracker.ietf.org/doc/html/rfc8032">RFC 8032</a>.</p>
+<p>The curve has order <code>8*L</code> for a given prime integer <code>L</code> (which is
+slightly greater than 2^252). A conventional base point is defined,
+that generates the subgroup of order <code>L</code>. Points used in public keys
+and signatures are normally part of that subgroup, though this is not
+verified (the function <code>Point::is_in_subgroup()</code> can be used to
+validate that a given point is in that subgroup).</p>
+<p>A curve point is represented by the <code>Point</code> structure. <code>Point</code>
+instances can be used in additions and subtractions with the usual
+<code>+</code> and <code>-</code> operators; all combinations of raw values and references
+are accepted, as well as compound assignment operators <code>+=</code> and <code>-=</code>.
+Specialized functions are available, in particular for point doubling
+(<code>Point::double()</code>) and for sequences of successive doublings
+(<code>Point::xdouble()</code>), the latter using some extra optimizations.
+Multiplication by an integer (<code>u64</code> type) or a scalar (<code>Scalar</code>
+structure) is also accepted, using the <code>*</code> and <code>*=</code> operators.
+Scalars are integers modulo <code>L</code>. The <code>Scalar</code> structure represents
+such a value; it implements all usual arithmetic operators (<code>+</code>, <code>-</code>,
+<code>*</code> and <code>/</code>, as well as <code>+=</code>, <code>-=</code>, <code>*=</code> and <code>/=</code>).</p>
+<p>Scalars can be encoded over 32 bytes (using unsigned little-endian
+convention) and decoded back. Encoding is always canonical, and
+decoding always verifies that the value is indeed in the canonical
+range.</p>
+<p>Points can be encoded over 32 bytes, and decoded back. As with
+scalars, encoding is always canonical, and verified upon decoding.</p>
+<p>The <code>PrivateKey</code> structure represents a private key for the Ed25519
+signature algorithm. It is instantiated from a 32-byte seed; the seed
+MUST have been generated with a cryptographically secure generator
+(this library does not include provisions for this generation step).
+Following <a href="https://datatracker.ietf.org/doc/html/rfc8032">RFC 8032</a>, the seed is derived into a secret scalar, and
+an extra private value used for deterministic signature generation.
+The private key allows signature generation with the Ed25519,
+Ed25519ctx and Ed25519ph variants (in the third case, the pre-hashed
+message is provided by the caller). The <code>PublicKey</code> structure
+represents a public key, i.e. a curve point (and its 32-byte encoding
+as an additional field). Signature verification functions are
+available on <code>PublicKey</code>, again for Ed25519, Ed25519ctx and
+Ed25519ph.</p>
+<h2 id="ed25519-edge-cases"><a class="doc-anchor" href="#ed25519-edge-cases">§</a>Ed25519 Edge Cases</h2>
+<p>It is known that there is a great amount of variation about how
+existing Ed25519 implementations handle signatures and public keys
+which are slightly out of the strict standard formats, e.g. when
+non-canonical encodings are used. See <a href="https://eprint.iacr.org/2020/1244">Taming the many
+EdDSAs</a> for some analysis. In the notations of that paper,
+this implementation is a strict RFC 8032 / FIPS 186-5 variant; it
+accepts test vectors 0 to 5, and reject vectors 6 to 11 (see table 5
+in the paper). In other words:</p>
+<ul>
+<li>
+<p>Canonical encoding of both points and scalars is enforced.
+Non-canonical encodings are rejected.</p>
+</li>
+<li>
+<p>The cofactored verification equation is used (i.e. including the
+multiplication by 8).</p>
+</li>
+<li>
+<p>Points outside of the subgroup of order <code>L</code>, including low-order
+points and the identity point, are accepted both for the <code>R</code>
+component of the signatures, and for public keys.</p>
+</li>
+<li>
+<p>The <code>S</code> component of a signature is accepted as long as it is
+canonically encoded (i.e. in the 0 to <code>L-1</code> range). Zero is
+accepted. The full 32 bytes are used: the three top bits of the
+last byte, though always of value 0, are checked.</p>
+</li>
+</ul>
+<h2 id="truncated-signatures"><a class="doc-anchor" href="#truncated-signatures">§</a>Truncated Signatures</h2>
+<p>The <code>PublicKey::verify_trunc_*()</code> functions support <em>truncated
+signatures</em>: a 64-byte signature is provided, but the last few bits
+are considered to have been reused for encoding other data, and thus
+are ignored. The verification function then tries to recompute the
+complete, original, untruncated signature. This process is safe since
+neither truncation nor reconstruction involve usage of the private
+key, and the original signature is obtained as an outcome of the
+process. Up to 32 bits (i.e. four whole bytes) can be rebuilt by this
+implementation, which corresponds to shrinking the minimum signature
+encoding size from 64 down to 60 bytes.</p>
+<p>Signature reconstruction cost increases with the number of ignored
+bits; when 32 bits are ignored, the verification cost is about 25 to
+35 times the cost of verifying an untruncated signature.</p>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="struct" href="struct.Point.html" title="struct crrl::ed25519::Point">Point</a></div><div class="desc docblock-short">A point on the twisted Edwards curve edwards25519.</div></li><li><div class="item-name"><a class="struct" href="struct.PrivateKey.html" title="struct crrl::ed25519::PrivateKey">PrivateKey</a></div><div class="desc docblock-short">An Ed25519 private key.</div></li><li><div class="item-name"><a class="struct" href="struct.PublicKey.html" title="struct crrl::ed25519::PublicKey">PublicKey</a></div><div class="desc docblock-short">An Ed25519 public key.</div></li></ul><h2 id="types" class="section-header">Type Aliases<a href="#types" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="type" href="type.Scalar.html" title="type crrl::ed25519::Scalar">Scalar</a></div><div class="desc docblock-short">Integers modulo L = 2^252 + 27742317777372353535851937790883648493.</div></li></ul></section></div></main></body></html>

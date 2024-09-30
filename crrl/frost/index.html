@@ -1,0 +1,54 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="FROST implementation."><title>crrl::frost - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="crrl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.1 (3f5fd8dd4 2024-08-06)" data-channel="1.80.1" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../crrl/index.html">crrl</a><span class="version">0.9.0</span></h2></div><h2 class="location"><a href="#">Module frost</a></h2><div class="sidebar-elems"><section><ul class="block"><li><a href="#modules">Modules</a></li></ul></section><h2><a href="../index.html">In crate crrl</a></h2></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Module <a href="../index.html">crrl</a>::<wbr><a class="mod" href="#">frost</a><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><span class="out-of-band"><a class="src" href="../../src/crrl/frost.rs.html#1-2457">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>FROST implementation.</p>
+<p>This follows the v14 draft specification: <a href="https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-frost-14">draft-irtf-cfrg-frost-14</a></p>
+<p>FROST is a threshold Schnorr signature scheme: the group private key
+is split into individual signer shares. If enough signers (with a
+configurable threshold) collaborate, then they can conjointly
+generate a signature on a given message. The individual signers do
+not have to trust each other (the protocol is resilient to actively
+malicious signers, who may at worst prevent the generation of a valid
+signature). Output signatures are “plain” Schnorr signatures,
+verifiable against the group public key. When the ciphersuite is
+FROST(Ed25519, SHA-512), the generated signatures can also be
+successfully verified with a plain Ed25519 verifier (as per RFC
+8032); the same applies to FROST(Ed448, SHAKE256) relatively to Ed448
+verifiers (also as defined in RFC 8032).</p>
+<p>Single-signer usage is also supported: message signatures can be
+generated from the group private key itself. In distributed signature
+usage, <em>nobody</em> knows the group private key itself once it has been
+split into individual signer key shares.</p>
+<p>Sub-modules are defined for several ciphersuites:</p>
+<ul>
+<li><code>ed25519</code>: FROST(Ed25519, SHA-512)</li>
+<li><code>ristretto255</code>: FROST(ristretto255, SHA-512)</li>
+<li><code>ed448</code>: FROST(Ed448, SHAKE256)</li>
+<li><code>p256</code>: FROST(P-256, SHA-256)</li>
+<li><code>secp256k1</code>: FROST(secp256k1, SHA-256)</li>
+</ul>
+<p>All sub-modules implement the same API, with the following types:</p>
+<ul>
+<li><code>GroupPrivateKey</code>: a group private key</li>
+<li><code>GroupPublicKey</code>: a group public key</li>
+<li><code>SignerPrivateKeyShare</code>: an individual signer’s private key share</li>
+<li><code>SignerPublicKey</code>: an individual signer’s public key</li>
+<li><code>KeySplitter</code>: tagging structure for the trusted dealer, who
+splits the group private key into individual key shares</li>
+<li><code>VSSElement</code>: an element of the VSS commitment produced by the trusted
+dealer (the VSS commitment allows individual signers to validate that
+their private key share was properly generated)</li>
+<li><code>Coordinator</code>: the permanent state of a coordinator, who organizes
+the signature generation and assembles the signature shares (that
+state consists of the signature threshold and the group public key)</li>
+<li><code>Nonce</code>: a per-signature nonce produced by an individual signer</li>
+<li><code>Commitment</code>: a per-signature commitment produced by an individual signer</li>
+<li><code>SignatureShare</code>: a signature share, produced by an individual signer</li>
+<li><code>Signature</code>: a generated FROST signature</li>
+</ul>
+<p>All the types that are meant to be either transmitted or stored on a
+non-volatile medium have encoding and decoding functions; the encoding
+functions return a fixed-size array of bytes (the size is published as
+the <code>ENC_LEN</code> constant in the structure) while the decoding function
+takes as input a slice of bytes and returns an <code>Option</code> type.</p>
+<p>Sample code using the FROST API is available in <a href="https://github.com/pornin/crrl/extra/frost-sample.rs">frost-sample.rs</a>.</p>
+<p>The implementation of all operations involving secret values is
+constant-time.</p>
+</div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="ed448/index.html" title="mod crrl::frost::ed448">ed448</a></div><div class="desc docblock-short">FROST(Ed448, SHAKE256)</div></li><li><div class="item-name"><a class="mod" href="ed25519/index.html" title="mod crrl::frost::ed25519">ed25519</a></div><div class="desc docblock-short">FROST(Ed25519, SHA-512)</div></li><li><div class="item-name"><a class="mod" href="p256/index.html" title="mod crrl::frost::p256">p256</a></div><div class="desc docblock-short">FROST(P-256, SHA-256)</div></li><li><div class="item-name"><a class="mod" href="ristretto255/index.html" title="mod crrl::frost::ristretto255">ristretto255</a></div><div class="desc docblock-short">FROST(ristretto255, SHA-512)</div></li><li><div class="item-name"><a class="mod" href="secp256k1/index.html" title="mod crrl::frost::secp256k1">secp256k1</a></div><div class="desc docblock-short">FROST(secp256k1, SHA-256)</div></li></ul></section></div></main></body></html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Crrl is a Rust library for cryptographic research."><title>crrl - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="crrl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.1 (3f5fd8dd4 2024-08-06)" data-channel="1.80.1" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../crrl/index.html">crrl</a><span class="version">0.9.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#reexports">Re-exports</a></li><li><a href="#modules">Modules</a></li><li><a href="#macros">Macros</a></li><li><a href="#structs">Structs</a></li><li><a href="#traits">Traits</a></li></ul></section></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a class="mod" href="#">crrl</a><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><span class="out-of-band"><a class="src" href="../src/crrl/lib.rs.html#1-175">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Crrl is a Rust library for cryptographic research.</p>
+<p>This library implements computations in some finite fields and
+elliptic curves. It aims at providing efficient and secure
+(constant-time) implementations, but with portable code, and with a
+convenient API so that scalars, curve points, and other field
+elements may be used in straightforward expressions with normal
+arihtmetic operators.</p>
+<p>Finite fields are implemented through some customizable types defined
+in <code>backend</code> (a 32-bit and a 64-bit backends are provided, the “right
+one” is automatically selected, unless overridden by a compile-time
+feature). The types may support several distinct moduli, chosen
+through compile-time type parameter.</p>
+<p>Curve edwards25519 is implemented in the <code>ed25519</code> module. The
+specialized X25519 function is in <code>x25519</code>. The prime-order group
+ristretto255 (internally based on edwards25519) is defined in the
+<code>ristretto255</code> module. NIST curve P-256 (aka “secp256r1” and
+“prime256v1”) is implemented in the <code>p256</code> module (with the ECDSA
+signature algorithm). Double-odd curves jq255e and jq255s are
+implemented by <code>jq255e</code> and <code>jq255s</code>, respectively (including
+signature and key exchange schemes). Secp256k1 is implemented in
+<code>secp256k1</code>. Edwards448 is in <code>ed448</code>, while the specialized X448
+function is in <code>x448</code>. The prime-order decaf448 group is implemented
+in <code>decaf448</code>.</p>
+<h2 id="usage"><a class="doc-anchor" href="#usage">§</a>Usage</h2>
+<p>The library is “mostly <code>no_std</code>”. By default, it compiles against the
+standard library. It can be compiled in <code>no_std</code> mode, in which case
+all functionality is still available, except verification of truncated
+ECDSA signatures with curve P-256.</p>
+<h2 id="conventions"><a class="doc-anchor" href="#conventions">§</a>Conventions</h2>
+<p>All implemented functions should be strictly constant-time, unless
+explicitly documented otherwise (non-constant-time functions normally
+have “vartime” in their name). In order to avoid unwanted side-channel
+leaks, Booleans are avoided (compilers tend to “optimize” things a bit
+too eagerly when handling <code>bool</code> values). All functions that return or
+use a potentially secret Boolean value use the <code>u32</code> type; the convention
+is that 0xFFFFFFFF means “true”, and 0x00000000 means “false”. No other
+value shall be used, for they would lead to unpredictable results.
+Similarly, the <code>Eq</code> or <code>PartialEq</code> traits are not implemented.</p>
+<p>Algebraic operations on field elements and curve points are performed
+with the usual operators (e.g. <code>+</code>); appropriate traits are defined
+so that structure types and pointers to structure types can be used
+more or less interchangeably. Throughout the code, functions that
+modify the object on which they are called tend to have a name in
+<code>set_*()</code> (e.g. for a curve point <code>P</code>, if we want to compute the
+double of that point, then <code>P.set_double()</code> modifies the point
+structure in place, while <code>P.double()</code> leaves <code>P</code> unmodified and
+returns the double as a new structure instance).</p>
+<h2 id="truncated-signatures"><a class="doc-anchor" href="#truncated-signatures">§</a>Truncated Signatures</h2>
+<p>Apart from standard support for curve operations and signature
+algorithms, <em>truncated signatures</em> are implemented for both Ed25519
+(Schnorr signatures over edwards25519) and ECDSA (over P-256). A
+truncated signature is a shrunk version, by up to 32 bits, of a
+normal signature; the verification process is then more expensive,
+though not necessarily intolerably expensive, depending on usage
+context (the most expensive verification function is for ECDSA on
+P-256, with maximal 32-bit truncation; in that case, verification
+cost can be up to about 0.65 seconds on a 500 MHz ARM Cortex A53; but
+Ed25519 signatures with 32-bit truncation can be verified in less
+than 0.05 seconds on the same hardware). Signature truncation can be
+useful in situations with strong I/O constraints, where every data
+bit counts, but where use of fully standard Ed25519 or ECDSA
+signature generators is made mandatory because of some regulatory or
+physical constraints of the signing hardware.</p>
+<h2 id="performance"><a class="doc-anchor" href="#performance">§</a>Performance</h2>
+<p>On an Intel i5-8259U CPU (Coffee Lake core), Ed25519 signatures have
+been benchmarked at about 51600 cycles for signing, 111000 cycles for
+verification; these are not bad values, and are competitive or at
+least within 30% of performance obtained from assembly-optimized
+implementations on the same hardware. For P-256, signing time is
+about 125000 cycles, verification is 256000 cycles. For the jq255e
+curve, signatures are generated in about 54700 cycles, and verified
+in only 82800 cycles (56200 and 86800, respectively, for jq255s).
+These figures have been obtained by compiling with Rust 1.59 in
+release mode, with the flags <code>-C target-cpu=native</code>.</p>
+<p>On an ARM Cortex A53 (RaspberryPi Model 3B), Ed25519 signing was
+measured at 213000 cycles, verification at 479000 cycles; for P-256,
+the figures were 389000 and 991000, respectively. With jq255e,
+signature generation and verification use 241000 and 358000 cycles,
+respectively (248000 and 369000 for jq255s).</p>
+<p>No inline assembly is used. On x86-64 architectures, the
+<code>_addcarry_u64()</code> and <code>_subborrow_u64()</code> intrinsics are used
+(from <code>core::arch::x86_64</code>); however, plain implementations with
+no intrinsics are available (and used on, for instance, aarch64).</p>
+</div></details><h2 id="reexports" class="section-header">Re-exports<a href="#reexports" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name" id="reexport.Zu128"><code>pub use backend::<a class="struct" href="backend/w64/struct.Zu128.html" title="struct crrl::backend::w64::Zu128">Zu128</a>;</code></div></li><li><div class="item-name" id="reexport.Zu256"><code>pub use backend::<a class="struct" href="backend/w64/struct.Zu256.html" title="struct crrl::backend::w64::Zu256">Zu256</a>;</code></div></li><li><div class="item-name" id="reexport.Zu384"><code>pub use backend::<a class="struct" href="backend/w64/struct.Zu384.html" title="struct crrl::backend::w64::Zu384">Zu384</a>;</code></div></li></ul><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="backend/index.html" title="mod crrl::backend">backend</a></div><div class="desc docblock-short">Architecture-specific implementations of finite fields.</div></li><li><div class="item-name"><a class="mod" href="blake2s/index.html" title="mod crrl::blake2s">blake2s</a></div></li><li><div class="item-name"><a class="mod" href="decaf448/index.html" title="mod crrl::decaf448">decaf448</a></div><div class="desc docblock-short">Decaf448 implementation.</div></li><li><div class="item-name"><a class="mod" href="ed448/index.html" title="mod crrl::ed448">ed448</a></div><div class="desc docblock-short">Edwards448 curve implementation.</div></li><li><div class="item-name"><a class="mod" href="ed25519/index.html" title="mod crrl::ed25519">ed25519</a></div><div class="desc docblock-short">Edwards25519 curve implementation.</div></li><li><div class="item-name"><a class="mod" href="field/index.html" title="mod crrl::field">field</a></div><div class="desc docblock-short">Finite fields.</div></li><li><div class="item-name"><a class="mod" href="frost/index.html" title="mod crrl::frost">frost</a></div><div class="desc docblock-short">FROST implementation.</div></li><li><div class="item-name"><a class="mod" href="gls254/index.html" title="mod crrl::gls254">gls254</a></div><div class="desc docblock-short">GLS254 implementation.</div></li><li><div class="item-name"><a class="mod" href="jq255e/index.html" title="mod crrl::jq255e">jq255e</a></div><div class="desc docblock-short">Jq255e implementation.</div></li><li><div class="item-name"><a class="mod" href="jq255s/index.html" title="mod crrl::jq255s">jq255s</a></div><div class="desc docblock-short">Jq255s implementation.</div></li><li><div class="item-name"><a class="mod" href="lms/index.html" title="mod crrl::lms">lms</a></div><div class="desc docblock-short">LMS implementation.</div></li><li><div class="item-name"><a class="mod" href="p256/index.html" title="mod crrl::p256">p256</a></div><div class="desc docblock-short">NIST P-256 curve implementation.</div></li><li><div class="item-name"><a class="mod" href="ristretto255/index.html" title="mod crrl::ristretto255">ristretto255</a></div><div class="desc docblock-short">Ristreto255 implementation.</div></li><li><div class="item-name"><a class="mod" href="secp256k1/index.html" title="mod crrl::secp256k1">secp256k1</a></div><div class="desc docblock-short">secp256k1 curve implementation.</div></li><li><div class="item-name"><a class="mod" href="x448/index.html" title="mod crrl::x448">x448</a></div><div class="desc docblock-short">X448 key-exchange algorithm.</div></li><li><div class="item-name"><a class="mod" href="x25519/index.html" title="mod crrl::x25519">x25519</a></div><div class="desc docblock-short">X25519 key-exchange algorithm.</div></li></ul><h2 id="macros" class="section-header">Macros<a href="#macros" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="macro" href="macro.define_gfgen.html" title="macro crrl::define_gfgen">define_gfgen</a></div></li><li><div class="item-name"><a class="macro" href="macro.define_gfgen_tests.html" title="macro crrl::define_gfgen_tests">define_gfgen_tests</a></div></li></ul><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="struct" href="struct.RngError.html" title="struct crrl::RngError">RngError</a></div><div class="desc docblock-short">The <code>rand_core</code> types are re-exported so that users of crrl do not
+have to worry about using the exact correct version of <code>rand_core</code>.
+Error type of random number generators</div></li></ul><h2 id="traits" class="section-header">Traits<a href="#traits" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="trait" href="trait.CryptoRng.html" title="trait crrl::CryptoRng">CryptoRng</a></div><div class="desc docblock-short">The <code>rand_core</code> types are re-exported so that users of crrl do not
+have to worry about using the exact correct version of <code>rand_core</code>.
+A marker trait used to indicate that an <a href="trait.RngCore.html" title="trait crrl::RngCore"><code>RngCore</code></a> or <a href="../rand_core/block/trait.BlockRngCore.html" title="trait rand_core::block::BlockRngCore"><code>BlockRngCore</code></a>
+implementation is supposed to be cryptographically secure.</div></li><li><div class="item-name"><a class="trait" href="trait.RngCore.html" title="trait crrl::RngCore">RngCore</a></div><div class="desc docblock-short">The <code>rand_core</code> types are re-exported so that users of crrl do not
+have to worry about using the exact correct version of <code>rand_core</code>.
+The core of a random number generator.</div></li></ul></section></div></main></body></html>

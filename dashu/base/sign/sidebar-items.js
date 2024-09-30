@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Sign"],"trait":["Abs","AbsEq","AbsOrd","Signed","UnsignedAbs"]};

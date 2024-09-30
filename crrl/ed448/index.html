@@ -1,0 +1,73 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Edwards448 curve implementation."><title>crrl::ed448 - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="crrl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.1 (3f5fd8dd4 2024-08-06)" data-channel="1.80.1" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../crrl/index.html">crrl</a><span class="version">0.9.0</span></h2></div><h2 class="location"><a href="#">Module ed448</a></h2><div class="sidebar-elems"><section><ul class="block"><li><a href="#structs">Structs</a></li></ul></section><h2><a href="../index.html">In crate crrl</a></h2></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Module <a href="../index.html">crrl</a>::<wbr><a class="mod" href="#">ed448</a><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><span class="out-of-band"><a class="src" href="../../src/crrl/ed448.rs.html#1-3095">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Edwards448 curve implementation.</p>
+<p>This module implements generic group operations on the Edwards curve
+of equation <code>x^2 + y^2 = 1 + d*x^2*y^2</code>, over the finite field
+GF(2^448 - 2^224 - 1), for the constant <code>d</code> = -39081. This curve is
+described in [RFC 7748]. The signature algorithm Ed448, which operates
+on that curve, is described in [RFC 8032].</p>
+<p>The curve has order <code>4*L</code> for a given prime integer <code>L</code> (which is
+slightly lower than 2^446). A conventional base point is defined,
+that generates the subgroup of order <code>L</code>. Points used in public keys
+and signatures are normally part of that subgroup, though this is not
+verified (the function <code>Point::is_in_subgroup()</code> can be used to
+validate that a given point is in that subgroup).</p>
+<p>A curve point is represented by the <code>Point</code> structure. <code>Point</code>
+instances can be used in additions and subtractions with the usual
+<code>+</code> and <code>-</code> operators; all combinations of raw values and references
+are accepted, as well as compound assignment operators <code>+=</code> and <code>-=</code>.
+Specialized functions are available, in particular for point doubling
+(<code>Point::double()</code>) and for sequences of successive doublings
+(<code>Point::xdouble()</code>), the latter using some extra optimizations.
+Multiplication by an integer (<code>u64</code> type) or a scalar (<code>Scalar</code>
+structure) is also accepted, using the <code>*</code> and <code>*=</code> operators.
+Scalars are integers modulo <code>L</code>. The <code>Scalar</code> structure represents
+such a value; it implements all usual arithmetic operators (<code>+</code>, <code>-</code>,
+<code>*</code> and <code>/</code>, as well as <code>+=</code>, <code>-=</code>, <code>*=</code> and <code>/=</code>).</p>
+<p>Scalars can be encoded over 56 bytes (using unsigned little-endian
+convention) and decoded back. Encoding is always canonical, and
+decoding always verifies that the value is indeed in the canonical
+range (note: within the context of Ed448, the second half of a
+signature is an encoded scalar but is represented over 57 bytes, not
+56, as per the specification in RFC 8032; the last byte of the
+signature is then always zero).</p>
+<p>Points can be encoded over 57 bytes, and decoded back. As with
+scalars, encoding is always canonical, and verified upon decoding.</p>
+<p>The <code>PrivateKey</code> structure represents a private key for the Ed448
+signature algorithm. It is instantiated from a 57-byte seed; the seed
+MUST have been generated with a cryptographically secure generator
+(this library does not include provisions for this generation step).
+Following [RFC 8032], the seed is derived into a secret scalar, and
+an extra private value used for deterministic signature generation.
+The private key allows signature generation with the Ed448
+and Ed448ph variants (in the latter, the pre-hashed message is provided
+by the caller). The <code>PublicKey</code> structure represents a public key, i.e.
+a curve point (and its 57-byte encoding as an additional field).
+Signature verification functions are available on <code>PublicKey</code>, again
+for Ed448 and Ed448ph.</p>
+<h2 id="ed448-edge-cases"><a class="doc-anchor" href="#ed448-edge-cases">§</a>Ed448 Edge Cases</h2>
+<p>Like Ed25519, there exist multiple variants of Ed448 implementations,
+with regard to the handling of some edge cases, e.g. non-canonical
+inputs. This implementation follows the strict RFC 8032 rules as
+follows:</p>
+<ul>
+<li>
+<p>Canonical encoding of both points and scalars is enforced.
+Non-canonical encodings are rejected.</p>
+</li>
+<li>
+<p>The cofactored verification equation is used (i.e. including the
+multiplication by 4).</p>
+</li>
+<li>
+<p>Points outside of the subgroup of order <code>L</code>, including low-order
+points and the identity point, are accepted both for the <code>R</code>
+component of the signatures, and for public keys.</p>
+</li>
+<li>
+<p>The <code>S</code> component of a signature is accepted as long as it is
+canonically encoded (i.e. in the 0 to <code>L-1</code> range). Zero is
+accepted. The full 57 bytes are used: the last byte, and the top
+two bits of the second to last byte, though always of value 0, are
+checked.</p>
+</li>
+</ul>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="struct" href="struct.Point.html" title="struct crrl::ed448::Point">Point</a></div><div class="desc docblock-short">A point on the Edwards curve edwards448.</div></li><li><div class="item-name"><a class="struct" href="struct.PrivateKey.html" title="struct crrl::ed448::PrivateKey">PrivateKey</a></div><div class="desc docblock-short">An Ed448 private key.</div></li><li><div class="item-name"><a class="struct" href="struct.PublicKey.html" title="struct crrl::ed448::PublicKey">PublicKey</a></div><div class="desc docblock-short">An Ed448 public key.</div></li><li><div class="item-name"><a class="struct" href="struct.Scalar.html" title="struct crrl::ed448::Scalar">Scalar</a></div></li></ul></section></div></main></body></html>
