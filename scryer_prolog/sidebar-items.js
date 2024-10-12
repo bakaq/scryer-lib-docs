@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["LeafAnswer","PrologTerm"],"fn":["default_toplevel","run_binary"],"struct":["Machine","MachineConfig","QueryState","StreamConfig"]};
+window.SIDEBAR_ITEMS = {"enum":["LeafAnswer","Term"],"fn":["default_toplevel","run_binary"],"struct":["Machine","MachineBuilder","QueryState","StreamConfig"]};
