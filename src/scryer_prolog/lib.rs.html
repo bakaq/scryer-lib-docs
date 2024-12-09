@@ -89,6 +89,7 @@
 <a href="#89" id="89">89</a>
 <a href="#90" id="90">90</a>
 <a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! A free software ISO Prolog system.
 </span><span class="attr">#![recursion_limit = <span class="string">"4112"</span>]
 #![deny(missing_docs)]
@@ -138,14 +139,15 @@
 <span class="kw">pub use </span>machine::lib_machine::<span class="kw-2">*</span>;
 <span class="kw">pub use </span>machine::Machine;
 
-<span class="attr">#[cfg(target_arch = <span class="string">"wasm32"</span>)]
+<span class="doccomment">/// Eval a source file in Wasm.
+</span><span class="attr">#[cfg(target_arch = <span class="string">"wasm32"</span>)]
 #[wasm_bindgen]
 </span><span class="kw">pub fn </span>eval_code(s: <span class="kw-2">&amp;</span>str) -&gt; String {
     <span class="kw">use </span>machine::mock_wam::<span class="kw-2">*</span>;
 
     console_error_panic_hook::set_once();
 
-    <span class="kw">let </span><span class="kw-2">mut </span>wam = Machine::with_test_streams();
+    <span class="kw">let </span><span class="kw-2">mut </span>wam = MachineBuilder::default().build();
     <span class="kw">let </span>bytes = wam.test_load_string(s);
     String::from_utf8_lossy(<span class="kw-2">&amp;</span>bytes).to_string()
 }

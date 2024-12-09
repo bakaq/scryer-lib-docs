@@ -8287,9 +8287,6 @@
 <a href="#8287" id="8287">8287</a>
 <a href="#8288" id="8288">8288</a>
 <a href="#8289" id="8289">8289</a>
-<a href="#8290" id="8290">8290</a>
-<a href="#8291" id="8291">8291</a>
-<a href="#8292" id="8292">8292</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::parser::ast::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::parser::parser::<span class="kw-2">*</span>;
 
@@ -8360,7 +8357,7 @@
 <span class="kw">use </span>std::time::{Duration, SystemTime};
 
 <span class="attr">#[cfg(feature = <span class="string">"repl"</span>)]
-</span><span class="kw">use </span>crossterm::event::{read, Event, KeyCode, KeyEvent, KeyModifiers};
+</span><span class="kw">use </span>crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 <span class="attr">#[cfg(feature = <span class="string">"repl"</span>)]
 </span><span class="kw">use </span>crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 
@@ -8403,12 +8400,14 @@
     <span class="kw">loop </span>{
         <span class="kw">let </span>key_ = read();
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(Event::Key(key_)) = key_ {
-            <span class="kw">match </span>key_.code {
-                KeyCode::Char(<span class="kw">_</span>) | KeyCode::Enter | KeyCode::Tab =&gt; {
-                    key = key_;
-                    <span class="kw">break</span>;
+            <span class="kw">if </span>key_.kind != KeyEventKind::Release {
+                <span class="kw">match </span>key_.code {
+                    KeyCode::Char(<span class="kw">_</span>) | KeyCode::Enter | KeyCode::Tab =&gt; {
+                        key = key_;
+                        <span class="kw">break</span>;
+                    }
+                    <span class="kw">_ </span>=&gt; (),
                 }
-                <span class="kw">_ </span>=&gt; (),
             }
         }
     }
@@ -10064,7 +10063,7 @@
         <span class="self">self</span>.machine_st.fail = <span class="bool-val">true</span>;
     }
 
-    <span class="attr">#[cfg(not(target_arch = <span class="string">"wasm32"</span>))]
+    <span class="attr">#[cfg(all(not(target_arch = <span class="string">"wasm32"</span>), feature = <span class="string">"hostname"</span>))]
     #[inline(always)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>current_hostname(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(host) = hostname::get() {
@@ -10081,7 +10080,7 @@
         <span class="self">self</span>.machine_st.fail = <span class="bool-val">true</span>;
     }
 
-    <span class="attr">#[cfg(target_arch = <span class="string">"wasm32"</span>)]
+    <span class="attr">#[cfg(any(target_arch = <span class="string">"wasm32"</span>, not(feature = <span class="string">"hostname"</span>)))]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>current_hostname(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="macro">unimplemented!</span>()
     }
@@ -12318,12 +12317,7 @@
             <span class="kw">let </span>orig_op = <span class="self">self</span>.deref_register(<span class="number">3</span>);
 
             <span class="kw">let </span>spec_num = <span class="kw">if </span>spec.get_tag() == HeapCellValueTag::Atom {
-                <span class="prelude-val">Some</span>(
-                    OpDeclSpec::try_from(<span class="macro">cell_as_atom!</span>(spec))
-                        .ok()
-                        .filter(|spec| <span class="macro">matches!</span>(spec, XFX | XFY | YFX | FX | FY | XF))
-                        .expect(<span class="string">"we should only get valid values != YF here"</span>),
-                )
+                OpDeclSpec::try_from(<span class="macro">cell_as_atom!</span>(spec)).ok()
             } <span class="kw">else </span>{
                 <span class="prelude-val">None
             </span>};
@@ -16050,7 +16044,7 @@
             .value_to_str_like(<span class="self">self</span>.machine_st.registers[<span class="number">1</span>])
         {
             <span class="kw">let </span>document = scraper::Html::parse_document(<span class="kw-2">&amp;</span>string.as_str());
-            <span class="kw">let </span>result = <span class="self">self</span>.html_node_to_term(document.tree.root());
+            <span class="kw">let </span>result = <span class="self">self</span>.html_node_to_term(document.tree.root().first_child().unwrap());
 
             <span class="macro">unify!</span>(<span class="self">self</span>.machine_st, <span class="self">self</span>.machine_st.registers[<span class="number">2</span>], result);
         } <span class="kw">else </span>{
